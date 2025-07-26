@@ -14,7 +14,7 @@ export default function LoginScreen() {
     // Demo login only - replace with your API
     if (email === "demo@wealthwise.com" && password === "password123") {
       await AsyncStorage.setItem("token", "demo-token-123");
-      router.replace("/"); // Send to home tab
+      router.replace("/tabs"); // Send to tabs/home
     } else {
       setError("Invalid email or password.");
     }
