@@ -4,7 +4,7 @@ import { Platform, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
-export default function HomeScreen() {
+export default function Home() {
   return (
     <>
       <ThemedView style={styles.titleContainer}>
