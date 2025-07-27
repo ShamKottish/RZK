@@ -1,13 +1,16 @@
 // app/(tabs)/investments.tsx
 import React, { useState } from "react";
 import {
-  ScrollView,
+  Dimensions,
+  FlatList,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface Stock {
   symbol: string;
@@ -24,35 +27,47 @@ const INTERNATIONAL_STOCKS: Stock[] = [
 ];
 
 export default function Investments() {
+  const { darkMode } = useTheme();
   const [scope, setScope] = useState<"Local" | "International">("Local");
   const [searchQuery, setSearchQuery] = useState("");
-  const watchlist = scope === "Local" ? LOCAL_STOCKS : INTERNATIONAL_STOCKS;
+  const watchlist = (scope === "Local" ? LOCAL_STOCKS : INTERNATIONAL_STOCKS).filter(
+    (stk) =>
+      stk.symbol.includes(searchQuery.toUpperCase()) ||
+      stk.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator
-    >
-      <Text style={styles.header}>Stock Tracking</Text>
-      <Text style={styles.subheader}>Monitor your favorite stocks</Text>
+  // Theme colors
+  const bg = darkMode ? "#111827" : "#f0f9ff";
+  const cardBg = darkMode ? "#1f2937" : "#ffffff";
+  const text = darkMode ? "#f9fafb" : "#111827";
+  const subtext = darkMode ? "#d1d5db" : "#6b7280";
+  const primary = "#8b5cf6";
+  const border = darkMode ? "#374151" : "#d1d5db";
+
+  const renderHeader = () => (
+    <>
+      <Text style={[styles.header, { color: text }]}>Stock Tracking</Text>
+      <Text style={[styles.subheader, { color: subtext }]}>
+        Monitor your favorite stocks
+      </Text>
 
       {/* Market Scope Toggle */}
-      <View style={styles.toggleContainer}>
-        {["Local", "International"].map((label) => {
+      <View style={[styles.toggleContainer, { borderColor: border }]}>
+        {(["Local", "International"] as const).map((label) => {
           const active = label === scope;
           return (
             <TouchableOpacity
               key={label}
               style={[
                 styles.toggleButton,
-                active && styles.toggleButtonActive,
+                { backgroundColor: active ? primary : cardBg },
               ]}
-              onPress={() => setScope(label as "Local" | "International")}
+              onPress={() => setScope(label)}
             >
               <Text
                 style={[
                   styles.toggleText,
-                  active && styles.toggleTextActive,
+                  { color: active ? "#fff" : text },
                 ]}
               >
                 {label}
@@ -63,129 +78,131 @@ export default function Investments() {
       </View>
 
       {/* Search Stocks */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Search Stocks</Text>
-        <View style={styles.searchBox}>
+      <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
+        <Text style={[styles.cardTitle, { color: text }]}>Search Stocks</Text>
+        <View style={[styles.searchBox, { backgroundColor: bg, borderColor: border }]}>
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: text }]}
             placeholder="Search for stocks..."
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={subtext}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </View>
       </View>
+    </>
+  );
 
-      {/* Your Watchlist */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Your Watchlist</Text>
-        {watchlist.map((stk) => {
-          const up = stk.changePercent >= 0;
-          return (
-            <View key={stk.symbol} style={styles.stockRow}>
-              <View>
-                <Text style={styles.symbol}>{stk.symbol}</Text>
-                <Text style={styles.company}>{stk.name}</Text>
-              </View>
-              <View style={styles.priceBlock}>
-                <Text style={styles.price}>${stk.price.toFixed(2)}</Text>
-                <Text
-                  style={[styles.change, up ? styles.up : styles.down]}
-                >
-                  {up ? "↑" : "↓"} {Math.abs(stk.changePercent).toFixed(2)}%
-                </Text>
-              </View>
-              <TouchableOpacity style={styles.removeButton}>
-                <Text style={styles.removeText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          );
-        })}
+  const renderItem = ({ item: stk }: { item: Stock }) => {
+    const up = stk.changePercent >= 0;
+    return (
+      <View
+        style={[styles.stockRow, { borderColor: border }]}
+        key={stk.symbol}
+      >
+        <View>
+          <Text style={[styles.symbol, { color: text }]}>{stk.symbol}</Text>
+          <Text style={[styles.company, { color: subtext }]}>{stk.name}</Text>
+        </View>
+        <View style={styles.priceBlock}>
+          <Text style={[styles.price, { color: text }]}>
+            ${stk.price.toFixed(2)}
+          </Text>
+          <Text style={[styles.change, { color: up ? "#16a34a" : "#dc2626" }]}>
+            {up ? "↑" : "↓"} {Math.abs(stk.changePercent).toFixed(2)}%
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.removeButton, { borderColor: border }]}
+        >
+          <Text style={styles.removeText}>✕</Text>
+        </TouchableOpacity>
       </View>
-    </ScrollView>
+    );
+  };
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
+      <FlatList
+        data={watchlist}
+        keyExtractor={(stk) => stk.symbol}
+        ListHeaderComponent={renderHeader}
+        renderItem={renderItem}
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
   );
 }
 
+const { width } = Dimensions.get("window");
+const ITEM_WIDTH = width - 32;
+
 const styles = StyleSheet.create({
+  safe: { flex: 1 },
   container: {
     padding: 16,
-    backgroundColor: "#f0f9ff",
+    paddingBottom: 32,
   },
   header: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#111827",
+    marginBottom: 8,
   },
   subheader: {
     fontSize: 16,
-    color: "#6b7280",
     marginBottom: 16,
   },
   toggleContainer: {
     flexDirection: "row",
-    backgroundColor: "#ffffff",
     borderRadius: 8,
     overflow: "hidden",
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#d1d5db",
   },
   toggleButton: {
     flex: 1,
     paddingVertical: 10,
     alignItems: "center",
-    backgroundColor: "#ffffff",
-  },
-  toggleButtonActive: {
-    backgroundColor: "#c084fc",
   },
   toggleText: {
     fontSize: 14,
-    color: "#6b7280",
-  },
-  toggleTextActive: {
-    color: "#ffffff",
     fontWeight: "600",
   },
   card: {
-    backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1f2937",
     marginBottom: 12,
   },
   searchBox: {
-    backgroundColor: "#f9fafb",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
+    borderWidth: 1,
   },
   searchInput: {
     fontSize: 16,
-    color: "#111827",
   },
   stockRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    justifyContent: "space-between",
+    width: ITEM_WIDTH,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   symbol: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
   },
   company: {
     fontSize: 14,
-    color: "#6b7280",
   },
   priceBlock: {
     flex: 1,
@@ -195,24 +212,18 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
   },
   change: {
-    marginTop: 4,
     fontSize: 14,
-    fontWeight: "500",
+    marginTop: 4,
   },
-  up: { color: "#16a34a" },
-  down: { color: "#dc2626" },
   removeButton: {
-    backgroundColor: "#ef4444",
+    borderWidth: 1,
     borderRadius: 8,
     padding: 8,
-    alignItems: "center",
-    justifyContent: "center",
   },
   removeText: {
-    color: "#ffffff",
+    color: "#ef4444",
     fontWeight: "600",
     fontSize: 12,
   },

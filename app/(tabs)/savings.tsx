@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import {
   Alert,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface Goal {
   name: string;
@@ -27,6 +29,16 @@ interface Transaction {
 }
 
 export default function Savings() {
+  const { darkMode } = useTheme();
+
+  // theme colors
+  const bg = darkMode ? "#111827" : "#f9fafb";
+  const cardBg = darkMode ? "#1f2937" : "#ffffff";
+  const text = darkMode ? "#f9fafb" : "#111827";
+  const subtext = darkMode ? "#d1d5db" : "#6b7280";
+  const border = darkMode ? "#374151" : "#e5e7eb";
+  const primary = "#8b5cf6";
+
   // Savings‐goals state
   const [newName, setNewName] = useState("");
   const [newTarget, setNewTarget] = useState("");
@@ -43,12 +55,13 @@ export default function Savings() {
   const [currentSavings, setCurrentSavings] = useState("");
   const [monthlyContribution, setMonthlyContribution] = useState("");
   const [annualReturn, setAnnualReturn] = useState("");
-  const [retirementResult, setRetirementResult] = useState<number | null>(
-    null
-  );
+  const [retirementResult, setRetirementResult] = useState<number | null>(null);
 
   const addGoal = () => {
-    if (!newName || !newTarget || !newDate) return;
+    if (!newName || !newTarget || !newDate) {
+      Alert.alert("Please fill all goal fields.");
+      return;
+    }
     setGoals([
       ...goals,
       { name: newName, target: Number(newTarget), saved: 0, date: newDate },
@@ -96,7 +109,7 @@ export default function Savings() {
       !monthlyContribution ||
       !annualReturn
     ) {
-      Alert.alert("Please fill in all fields");
+      Alert.alert("Please fill in all retirement fields.");
       return;
     }
     const years = Number(retireAge) - Number(currentAge);
@@ -106,50 +119,59 @@ export default function Savings() {
     const pmnt = Number(monthlyContribution);
 
     const fvCurrent = pv * Math.pow(1 + rMonthly, periods);
-    const fvContrib = pmnt * ((Math.pow(1 + rMonthly, periods) - 1) / rMonthly);
+    const fvContrib =
+      pmnt * ((Math.pow(1 + rMonthly, periods) - 1) / rMonthly);
 
     setRetirementResult(fvCurrent + fvContrib);
   };
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={[styles.flex, { backgroundColor: bg }]}
       behavior={Platform.select({ ios: "padding", android: undefined })}
     >
       <ScrollView
         contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator
+        showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <Text style={styles.header}>Savings Tracker</Text>
-        <Text style={styles.subheader}>Set goals and track your progress</Text>
+        <Text style={[styles.header, { color: text }]}>
+          Savings Tracker
+        </Text>
+        <Text style={[styles.subheader, { color: subtext }]}>
+          Set goals and track your progress
+        </Text>
 
         {/* Create New Savings Goal */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Create New Savings Goal</Text>
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
+          <Text style={[styles.cardTitle, { color: text }]}>
+            Create New Savings Goal
+          </Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: text, borderColor: subtext }]}
             placeholder="Goal Name"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={subtext}
             value={newName}
             onChangeText={setNewName}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: text, borderColor: subtext }]}
             placeholder="Target Amount ($)"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={subtext}
             keyboardType="numeric"
             value={newTarget}
             onChangeText={setNewTarget}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: text, borderColor: subtext }]}
             placeholder="Target Date (mm/dd/yyyy)"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={subtext}
             value={newDate}
             onChangeText={setNewDate}
           />
-          <TouchableOpacity style={styles.button} onPress={addGoal}>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: primary }]}
+            onPress={addGoal}
+          >
             <Text style={styles.buttonText}>Create Goal</Text>
           </TouchableOpacity>
         </View>
@@ -157,33 +179,42 @@ export default function Savings() {
         {/* Your Savings Goals */}
         {goals.length > 0 && (
           <>
-            <Text style={[styles.cardTitle, { marginTop: 24 }]}>
+            <Text style={[styles.sectionTitle, { color: text }]}>
               Your Savings Goals
             </Text>
             {goals.map((g, idx) => {
               const progress = Math.min(g.saved / g.target, 1);
               return (
-                <View key={idx} style={styles.card}>
+                <View
+                  key={idx}
+                  style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}
+                >
                   <View style={styles.row}>
-                    <Text style={styles.goalName}>{g.name}</Text>
-                    <Text style={styles.goalAmount}>
+                    <Text style={[styles.goalName, { color: text }]}>{g.name}</Text>
+                    <Text style={[styles.goalAmount, { color: text }]}>
                       ${g.saved.toLocaleString()} / ${g.target.toLocaleString()}
                     </Text>
                   </View>
-                  <Text style={styles.targetDate}>Target: {g.date}</Text>
+                  <Text style={[styles.targetDate, { color: subtext }]}>
+                    Target: {g.date}
+                  </Text>
                   <View style={styles.progressBar}>
                     <View
                       style={[
                         styles.progressFill,
-                        { width: `${progress * 100}%` },
+                        { width: `${progress * 100}%`, backgroundColor: primary },
                       ]}
                     />
                   </View>
                   <View style={styles.row}>
                     <TextInput
-                      style={[styles.input, styles.amountInput]}
+                      style={[
+                        styles.input,
+                        styles.amountInput,
+                        { color: text, borderColor: subtext },
+                      ]}
                       placeholder="Amount"
-                      placeholderTextColor="#6b7280"
+                      placeholderTextColor={subtext}
                       keyboardType="numeric"
                       value={amounts[idx] || ""}
                       onChangeText={(text) =>
@@ -191,17 +222,13 @@ export default function Savings() {
                       }
                     />
                     <TouchableOpacity
-                      style={[styles.button, styles.buttonSmall]}
+                      style={[styles.buttonSmall, { backgroundColor: primary }]}
                       onPress={() => addToGoal(idx)}
                     >
                       <Text style={styles.buttonText}>+ Add</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[
-                        styles.button,
-                        styles.buttonSmall,
-                        styles.withdraw,
-                      ]}
+                      style={[styles.buttonSmall, { backgroundColor: "#dc2626" }]}
                       onPress={() => withdrawFromGoal(idx)}
                     >
                       <Text style={styles.buttonText}>– Withdraw</Text>
@@ -214,82 +241,90 @@ export default function Savings() {
         )}
 
         {/* Transaction Log */}
-        <Text style={[styles.cardTitle, { marginTop: goals.length ? 24 : 0 }]}>
+        <Text style={[styles.sectionTitle, { color: text }]}>
           Transaction Log
         </Text>
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
           {transactions.length === 0 ? (
-            <Text style={styles.noTrans}>No transactions yet.</Text>
+            <Text style={[styles.noTrans, { color: subtext }]}>
+              No transactions yet.
+            </Text>
           ) : (
-            transactions.map((tx, i) => (
-              <View key={i} style={styles.txRow}>
-                <Text style={styles.txText}>
-                  {tx.type} ${tx.amount.toLocaleString()}{" "}
-                  {tx.type === "Add" ? "to" : "from"} {tx.goal}
-                </Text>
-                <Text style={styles.txDate}>
-                  {tx.date.toLocaleString()}
-                </Text>
-              </View>
-            ))
+            <FlatList
+              data={transactions}
+              keyExtractor={(_, i) => i.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.txRow}>
+                  <Text style={[styles.txText, { color: text }]}>
+                    {item.type} ${item.amount.toLocaleString()}{" "}
+                    {item.type === "Add" ? "to" : "from"} {item.goal}
+                  </Text>
+                  <Text style={[styles.txDate, { color: subtext }]}>
+                    {item.date.toLocaleString()}
+                  </Text>
+                </View>
+              )}
+            />
           )}
         </View>
 
         {/* Retirement Calculator */}
-        <Text style={[styles.cardTitle, { marginTop: 24 }]}>
+        <Text style={[styles.sectionTitle, { color: text }]}>
           Retirement Calculator
         </Text>
-        <View style={styles.card}>
-          <Text style={styles.subCardTitle}>Your Information</Text>
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
+          <Text style={[styles.subCardTitle, { color: text }]}>
+            Your Information
+          </Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: text, borderColor: subtext }]}
             placeholder="Current Age"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={subtext}
             keyboardType="numeric"
             value={currentAge}
             onChangeText={setCurrentAge}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: text, borderColor: subtext }]}
             placeholder="Retirement Age"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={subtext}
             keyboardType="numeric"
             value={retireAge}
             onChangeText={setRetireAge}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: text, borderColor: subtext }]}
             placeholder="Current Savings ($)"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={subtext}
             keyboardType="numeric"
             value={currentSavings}
             onChangeText={setCurrentSavings}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: text, borderColor: subtext }]}
             placeholder="Monthly Contribution ($)"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={subtext}
             keyboardType="numeric"
             value={monthlyContribution}
             onChangeText={setMonthlyContribution}
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: text, borderColor: subtext }]}
             placeholder="Expected Annual Return (%)"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={subtext}
             keyboardType="numeric"
             value={annualReturn}
             onChangeText={setAnnualReturn}
           />
           <TouchableOpacity
-            style={[styles.button, { marginTop: 8 }]}
+            style={[styles.button, { backgroundColor: primary }]}
             onPress={calculateRetirement}
           >
             <Text style={styles.buttonText}>Calculate Retirement</Text>
           </TouchableOpacity>
 
           {retirementResult !== null && (
-            <Text style={styles.resultText}>
+            <Text style={[styles.resultText, { color: text }]}>
               Estimated Savings at Retirement:{"\n"}$
               {retirementResult.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
@@ -307,37 +342,35 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: {
     padding: 16,
-    backgroundColor: "#f9fafb",
   },
   header: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#111827",
+    marginBottom: 8,
   },
   subheader: {
     fontSize: 16,
-    color: "#6b7280",
     marginBottom: 16,
   },
   card: {
-    backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 24,
+    borderWidth: 1,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1f2937",
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 12,
   },
   subCardTitle: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#374151",
     marginBottom: 12,
   },
   row: {
@@ -346,83 +379,72 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   input: {
+    flex: 1,
     borderWidth: 1,
-    borderColor: "#d1d5db",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: "#fefefe",
-    flex: 1,
-    color: "#111827",
+    marginBottom: 12,
   },
   amountInput: {
+    flex: 0.4,
     marginRight: 8,
   },
   button: {
-    backgroundColor: "#c084fc",
+    backgroundColor: "#8b5cf6",
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
-    justifyContent: "center",
+    marginTop: 8,
   },
   buttonSmall: {
-    flex: 0.25,
-    marginLeft: 8,
-  },
-  withdraw: {
-    backgroundColor: "#ef4444",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   buttonText: {
-    color: "#ffffff",
+    color: "#fff",
     fontWeight: "600",
   },
   goalName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
     flex: 1,
   },
   goalAmount: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
   },
   targetDate: {
     fontSize: 14,
-    color: "#4b5563",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   progressBar: {
     height: 8,
-    backgroundColor: "#e5e7eb",
     borderRadius: 4,
     overflow: "hidden",
     marginBottom: 12,
+    backgroundColor: "#e5e7eb",
   },
   progressFill: {
     height: "100%",
-    backgroundColor: "#8b5cf6",
   },
   noTrans: {
     fontStyle: "italic",
-    color: "#6b7280",
   },
   txRow: {
     marginBottom: 8,
   },
   txText: {
     fontSize: 14,
-    color: "#111827",
   },
   txDate: {
     fontSize: 12,
-    color: "#6b7280",
   },
   resultText: {
     marginTop: 12,
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
     textAlign: "center",
   },
 });

@@ -1,41 +1,29 @@
 // app/logoscreen.tsx
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 
-// use a relative require so Metro can bundle it
+// Metro‑compatible require
 const logo = require('../assets/images/3D.png');
 
 export default function LogoScreen() {
   const router = useRouter();
   const opacity = useRef(new Animated.Value(0)).current;
-  const scale   = useRef(new Animated.Value(0.8)).current;
-  const rotate  = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.sequence([
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scale, {
-          toValue: 1,
-          friction: 4,
-          useNativeDriver: true,
-        }),
-        Animated.timing(rotate, {
-          toValue: 1,
-          duration: 800,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.delay(400),
+      // fade in  → 1
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      // hold at 1 for 500ms
+      Animated.delay(500),
+      // fade out → 0
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 500,
+        duration: 800,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -43,19 +31,11 @@ export default function LogoScreen() {
     });
   }, []);
 
-  const rotation = rotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
   return (
     <View style={styles.container}>
       <Animated.Image
         source={logo}
-        style={[
-          styles.logo,
-          { opacity, transform: [{ scale }, { rotate: rotation }] },
-        ]}
+        style={[styles.logo, { opacity }]}
         resizeMode="contain"
       />
     </View>
@@ -70,7 +50,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 200,
-    height: 200,
+    width: 1000,
+    height: 6100,
   },
 });
