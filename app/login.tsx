@@ -6,7 +6,6 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
-  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -20,12 +19,11 @@ import {
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 
-const logo = require('../assets/images/3D.png');
-
 export default function LoginScreen() {
   const router = useRouter();
   const { darkMode } = useTheme();
-  const [email, setEmail] = useState('');
+  // Combined identifier state (email or phone)
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState('');
@@ -37,7 +35,7 @@ export default function LoginScreen() {
   const placeholder = darkMode ? '#d1d5db' : '#6b7280';
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!identifier || !password) {
       setError('Please fill in both fields.');
       return;
     }
@@ -45,20 +43,20 @@ export default function LoginScreen() {
     setLoading(true);
     setTimeout(async () => {
       setLoading(false);
-      if (
-        email === 'demo@wealthwise.com' &&
-        password === 'password123'
-      ) {
+      // Demo credentials: email or phone
+      const validEmail = 'demo@rzk.com';
+      const validPhone = '0551234567';
+      if ((identifier === validEmail || identifier === validPhone) && password === 'password123') {
         await AsyncStorage.setItem('token', 'demo-token-123');
         router.replace('/dashboard');
       } else {
-        setError('Invalid email or password.');
+        setError('Invalid credentials.');
       }
     }, 1000);
   };
 
   const { width, height } = Dimensions.get('window');
-  const logoHeight = height * 0.3;
+  const logoHeight = height * 0.3; // unused now
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
@@ -68,50 +66,36 @@ export default function LoginScreen() {
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.inner}>
-            <Image
-              source={logo}
-              style={[styles.logo, { width, height: logoHeight }]}
-              resizeMode="contain"
-            />
 
-            <Text style={[styles.title, { color: text }]}>
-              Welcome Back
+            {/* Brand Text */}
+            <Text style={[styles.brandTitle, { color: text }]}>
+              <Text style={{ color: '#8b5cf6' }}>RZK</Text>
             </Text>
+
+            <Text style={[styles.title, { color: text }]}>Welcome Back</Text>
             {!!error && <Text style={styles.error}>{error}</Text>}
 
-            <View
-              style={[
-                styles.inputGroup,
-                { backgroundColor: cardBg, borderColor: placeholder },
-              ]}
-            >
+            {/* Identifier Input (Email or Phone) */}
+            <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder }]}>              
               <Ionicons
-                name="mail-outline"
+                name={identifier.match(/^[0-9]+$/) ? 'call-outline' : 'mail-outline'}
                 size={20}
                 color={placeholder}
               />
               <TextInput
                 style={[styles.input, { color: text }]}
-                placeholder="Email"
+                placeholder="Email or Phone"
                 placeholderTextColor={placeholder}
-                keyboardType="email-address"
+                keyboardType={identifier.match(/^[0-9]*$/) ? 'phone-pad' : 'email-address'}
                 autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
+                value={identifier}
+                onChangeText={setIdentifier}
               />
             </View>
 
-            <View
-              style={[
-                styles.inputGroup,
-                { backgroundColor: cardBg, borderColor: placeholder },
-              ]}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={placeholder}
-              />
+            {/* Password Input */}
+            <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder }]}>              
+              <Ionicons name="lock-closed-outline" size={20} color={placeholder} />
               <TextInput
                 style={[styles.input, { color: text }]}
                 placeholder="Password"
@@ -120,46 +104,38 @@ export default function LoginScreen() {
                 value={password}
                 onChangeText={setPassword}
               />
-              <Pressable onPress={() => setShowPwd((v) => !v)}>
-                <Ionicons
-                  name={showPwd ? 'eye-off' : 'eye'}
-                  size={20}
-                  color={placeholder}
-                />
+              <Pressable onPress={() => setShowPwd(v => !v)}>
+                <Ionicons name={showPwd ? 'eye-off' : 'eye'} size={20} color={placeholder} />
               </Pressable>
             </View>
 
+            {/* Sign Up Prompt */}
             <View style={styles.signupPrompt}>
-              <Text style={[styles.promptText, { color: text }]}>
-                Don't have an account?{' '}
-              </Text>
+              <Text style={[styles.promptText, { color: text }]}>Don't have an account? </Text>
               <Pressable onPress={() => router.push('/signup')}>
-                <Text style={[styles.linkText, { color: '#8b5cf6' }]}>
-                  Sign Up
-                </Text>
+                <Text style={[styles.linkText, { color: '#8b5cf6' }]}>Sign Up</Text>
               </Pressable>
             </View>
 
+            {/* Forgot Password */}
+            <Pressable onPress={() => router.push('/forgot-password')}>
+              <Text style={[styles.forgotText, { color: '#8b5cf6' }]}>Forgot Password?</Text>
+            </Pressable>
+
+            {/* Login Button */}
             <Pressable
               style={[
                 styles.button,
                 { backgroundColor: '#8b5cf6' },
-                (!email || !password || loading) &&
-                  styles.buttonDisabled,
+                (!identifier || !password || loading) && styles.buttonDisabled,
               ]}
               onPress={handleLogin}
-              disabled={!email || !password || loading}
+              disabled={!identifier || !password || loading}
             >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Log In</Text>
-              )}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Log In</Text>}
             </Pressable>
 
-            <Text style={[styles.demoHint, { color: placeholder }]}>
-              Demo: demo@wealthwise.com / password123
-            </Text>
+            <Text style={[styles.demoHint, { color: placeholder }]}>Demo: demo@rzk.com or 0551234567 / password123</Text>
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -168,20 +144,13 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  // "Forgot Password" link styling
+  forgotText: { marginTop: 8, fontSize: 14, textDecorationLine: 'underline' },
   safe: { flex: 1 },
   container: { flex: 1 },
-  inner: {
-    flex: 1,
-    alignItems: 'center',
-    paddingTop: 24,
-  },
-  logo: { marginBottom: 16 },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
+  inner: { flex: 1, alignItems: 'center', paddingTop: 44 },
+  brandTitle: { fontSize: 25, fontWeight: '800', marginBottom: 200 },
+  title: { fontSize: 36, fontWeight: '700', marginBottom: 24, textAlign: 'center' },
   inputGroup: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -192,21 +161,10 @@ const styles = StyleSheet.create({
     width: '90%',
   },
   input: { flex: 1, height: 48, marginLeft: 8 },
-  signupPrompt: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
+  signupPrompt: { flexDirection: 'row', justifyContent: 'center', marginBottom: 16 },
   promptText: { fontSize: 14 },
   linkText: { fontSize: 14, fontWeight: '600' },
-  button: {
-    height: 48,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-    width: '90%',
-  },
+  button: { height: 48, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginTop: 8, width: '90%' },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   demoHint: { marginTop: 16, fontStyle: 'italic', fontSize: 12 },

@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 
+
 interface Goal {
   name: string;
   target: number;
@@ -212,13 +213,16 @@ export default function Savings() {
               </>
             )}
 
-            <Text style={[styles.questionText, { color: text }]}>Target Date</Text>
+   <Text style={[styles.questionText, { color: text }]}>Target Date</Text>
 <TouchableOpacity
   onPress={() => setShowDatePicker(true)}
   style={[styles.input, { justifyContent: "center", borderColor: subtext }]}
 >
   <Text style={{ color: date ? text : subtext }}>
-    {date ? date.toLocaleDateString() : "Select Date"}
+    {date
+      ? date.toLocaleDateString("en-US")
+      : "Select Date"
+    }
   </Text>
 </TouchableOpacity>
 
@@ -226,8 +230,11 @@ export default function Savings() {
   <DateTimePicker
     value={date || new Date()}
     mode="date"
-    // ← use calendar UI
     display={Platform.OS === "android" ? "calendar" : "inline"}
+    // iOS: switch between light/dark calendar
+    themeVariant={darkMode ? "dark" : "light"}
+    // Android: ensure text is visible
+    textColor={text}
     onChange={(event: DateTimePickerEvent, selectedDate?: Date) => {
       setShowDatePicker(false);
       if (selectedDate) setDate(selectedDate);
@@ -312,24 +319,37 @@ export default function Savings() {
           {/* Transaction Log */}
           {track && (
             <>
-              <Text style={[styles.sectionTitle, { color: text }]}>Transaction Log</Text>
+              <Text style={[styles.sectionTitle, { color: text }]}>Tracker</Text>
               <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
                 {transactions.length === 0 ? (
-                  <Text style={[styles.noTrans, { color: subtext }]}>No transactions yet.</Text>
+                  <Text style={[styles.noTrans, { color: subtext }]}>No additions or withdrawals yet.</Text>
                 ) : (
-                  <FlatList
-                    data={transactions}
-                    keyExtractor={(_, i) => i.toString()}
-                    renderItem={({ item }) => (
-                      <View style={styles.txRow}>
-                        <Text style={[styles.txText, { color: text }]}>
-                          {item.type} ﷼{item.amount} {item.type === "Add" ? "to" : "from"} {item.goal}
-                        </Text>
-                        <Text style={[styles.txDate, { color: subtext }]}>{item.date.toLocaleDateString()}</Text>
-                      </View>
-                    )}
-                  />
-                )}
+        <FlatList
+  data={transactions}
+  keyExtractor={(_, i) => i.toString()}
+  nestedScrollEnabled
+  style={{ flexGrow: 0 }}
+  renderItem={({ item }) => (
+    <View style={styles.txRow}>
+      {/* Use green for additions, red for withdrawals */}
+      <Text
+        style={[
+          styles.txText,
+          {
+            color: item.type === "Add" ? "#22c55e" /* green-500 */ : "#ef4444" /* red-500 */,
+          },
+        ]}
+      >
+        {item.type} ﷼{item.amount} {item.type === "Add" ? "to" : "from"} {item.goal}
+      </Text>
+      <Text style={[styles.txDate, { color: subtext }]}>
+        {item.date.toLocaleDateString("en-US")}
+      </Text>
+    </View>
+  )}
+/>
+
+     )}
               </View>
             </>
           )}

@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 
 // Metro‑compatible require
-const logo = require('../assets/images/3D.png');
+const logo = require('../assets/images/fin3d.png');
 
 export default function LogoScreen() {
   const router = useRouter();
