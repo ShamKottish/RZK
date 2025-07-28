@@ -1,44 +1,32 @@
-// contexts/ThemeContext.tsx
-import React, {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
-import { Appearance } from 'react-native';
+// app/contexts/ThemeContext.tsx
+import React, { createContext, useContext, useState } from "react";
+import { Lang, strings } from "../app/translations";
 
-type ThemeContextType = {
+interface ThemeContextType {
   darkMode: boolean;
-  setDarkMode: (v: boolean) => void;
-};
+  setDarkMode(v: boolean): void;
+  language: Lang;
+  setLanguage(l: Lang): void;
+  t(key: keyof typeof strings.en): string;
+}
 
-const ThemeContext = createContext<ThemeContextType>({
-  darkMode: false,
-  setDarkMode: () => {},
-});
+const ThemeContext = createContext<ThemeContextType>(null!);
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  // start with system preference
-  const [darkMode, setDarkMode] = useState(
-    Appearance.getColorScheme() === 'dark'
-  );
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [darkMode, setDarkMode] = useState(false);
+  const [language, setLanguage] = useState<Lang>("en");
 
-  // optional: auto‑follow OS changes
-  useEffect(() => {
-    const sub = Appearance.addChangeListener(({ colorScheme }) => {
-      setDarkMode(colorScheme === 'dark');
-    });
-    return () => sub.remove();
-  }, []);
+  const t = (key: keyof typeof strings.en) => {
+    return strings[language][key] || key;
+  };
 
   return (
-    <ThemeContext.Provider value={{ darkMode, setDarkMode }}>
+    <ThemeContext.Provider
+      value={{ darkMode, setDarkMode, language, setLanguage, t }}
+    >
       {children}
     </ThemeContext.Provider>
   );
 }
 
-export function useTheme() {
-  return useContext(ThemeContext);
-}
+export const useTheme = () => useContext(ThemeContext);

@@ -1,11 +1,12 @@
 // app/(tabs)/settings.tsx
-import { useTheme } from '@/contexts/ThemeContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CommonActions, useNavigation } from '@react-navigation/native';
-import * as Notifications from 'expo-notifications';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import { useTheme } from "@/contexts/ThemeContext";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CommonActions, useNavigation } from "@react-navigation/native";
+import * as Notifications from "expo-notifications";
+import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React, { useState } from "react";
 import {
   Alert,
   Linking,
@@ -16,12 +17,18 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
 export default function Settings() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { darkMode, setDarkMode } = useTheme();
+  const {
+    darkMode,
+    setDarkMode,
+    language,
+    setLanguage,
+    t, // <-- our translator
+  } = useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   const toggleNotifications = async (value: boolean) => {
@@ -46,7 +53,7 @@ export default function Settings() {
           routes: [{ name: 'login' }],
         })
       );
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Unable to log out. Please try again.');
     }
   };
@@ -58,17 +65,18 @@ export default function Settings() {
   const border = darkMode ? '#374151' : '#e5e7eb';
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>      
+    <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
       <StatusBar style={darkMode ? 'light' : 'dark'} />
 
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={[styles.header, { color: text }]}>Settings</Text>
 
         {/* Preferences */}
-        <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>          
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
           <Text style={[styles.cardTitle, { color: text }]}>Preferences</Text>
 
-          <View style={[styles.row, { borderColor: border }]}>            
+          {/* Dark Mode */}
+          <View style={[styles.row, { borderColor: border }]}>
             <Text style={[styles.optionLabel, { color: text }]}>Dark Mode</Text>
             <Switch
               value={darkMode}
@@ -78,7 +86,8 @@ export default function Settings() {
             />
           </View>
 
-          <View style={[styles.row, { borderColor: border }]}>            
+          {/* Notifications */}
+          <View style={[styles.row, { borderColor: border }]}>
             <Text style={[styles.optionLabel, { color: text }]}>Notifications</Text>
             <Switch
               value={notificationsEnabled}
@@ -87,10 +96,21 @@ export default function Settings() {
               thumbColor={notificationsEnabled ? '#fff' : '#f4f3f4'}
             />
           </View>
+
+          {/* Language */}
+          <TouchableOpacity
+            style={[styles.row, { borderColor: darkMode ? "#374151" : "#e5e7eb" }]}
+            onPress={() => setLanguage(language === "en" ? "ar" : "en")}
+          >
+            <Text style={[styles.optionLabel, { color: darkMode ? "#f9fafb" : "#111827" }]}>
+              {t("language")}: {language === "en" ? "English" : "العربية"}
+            </Text>
+            <Ionicons name="language-outline" size={20} color={darkMode ? "#d1d5db" : "#6b7280"} />
+          </TouchableOpacity>
         </View>
 
         {/* Account */}
-        <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>          
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
           <Text style={[styles.cardTitle, { color: text }]}>Account</Text>
 
           <TouchableOpacity style={[styles.row, { borderColor: border }]}>
@@ -108,17 +128,18 @@ export default function Settings() {
         </View>
 
         {/* About */}
-        <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>          
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
           <Text style={[styles.cardTitle, { color: text }]}>About</Text>
 
-          <View style={[styles.row, { borderColor: border }]}>            
+          <View style={[styles.row, { borderColor: border }]}>
             <Text style={[styles.optionLabel, { color: text }]}>App Version</Text>
-            <Text style={[styles.valueLabel, { color: subtext }]}>
-              1.0.0
-            </Text>
+            <Text style={[styles.valueLabel, { color: subtext }]}>1.0.0</Text>
           </View>
 
-          <TouchableOpacity style={[styles.row, { borderColor: border }]} onPress={() => router.push('/terms')}>
+          <TouchableOpacity
+            style={[styles.row, { borderColor: border }]}
+            onPress={() => router.push('/terms')}
+          >
             <Text style={[styles.linkLabel, { color: '#2563eb' }]}>Terms of Service</Text>
             <Text style={[styles.arrow, { color: subtext }]}>&gt;</Text>
           </TouchableOpacity>
