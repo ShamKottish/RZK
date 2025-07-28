@@ -1,0 +1,11 @@
+# all the libraries and stuff installed to set up this folder.
+
+fastapi~=0.116.1
+uvicorn~=0.35.0
+sqlalchemy~=2.0.41
+pydantic~=2.11.7
+openai~=1.97.1
+python-dotenv~=1.1.1
+email-validator
+PyJWT~=2.10.1
+passlib~=1.7.4
