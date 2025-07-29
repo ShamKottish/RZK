@@ -1,10 +1,13 @@
 # the table layout of the user acc.
 
+from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Float
 from app.db.connection import Base
 
 class User(Base):
     __tablename__ = "users"
+
+    savings_goals = relationship("SavingsGoal", back_populates="user")
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
