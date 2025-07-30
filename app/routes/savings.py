@@ -16,6 +16,10 @@ def create_savings_goal(goal: SavingsGoalCreate, db: Session = Depends(get_db), 
         goal_name=goal.goal_name,
         target_amount=goal.target_amount,
         target_date=goal.target_date,
+        interest_type=goal.interest_type,
+        risk_tolerance=goal.risk_tolerance,
+        expected_return=goal.expected_return,
+        investing=goal.investing
     )
     db.add(new_goal)
     db.commit()
