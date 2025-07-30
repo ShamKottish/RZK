@@ -8,6 +8,7 @@ class User(Base):
     __tablename__ = "users"
 
     savings_goals = relationship("SavingsGoal", back_populates="user")
+    transactions = relationship("Transaction", back_populates="user")
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)

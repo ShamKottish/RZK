@@ -12,5 +12,6 @@ class SavingsGoal(Base):
     goal_name = Column(String, nullable=False)
     target_amount = Column(Float, nullable=False)
     target_date = Column(Date, nullable=False)
+    current_amount = Column(Float, default=0.0)
 
     user = relationship("User", back_populates="savings_goals")
