@@ -63,8 +63,8 @@ def update_savings(user_id: int, amount: int, db: Session = Depends(get_db)):
     return {"message": "Savings updated", "current_savings": user.current_savings}
 
 
-@router.post("/login")
-def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
+@router.post("/user/login")
+async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user_credentials.email).first()
     if not db_user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
