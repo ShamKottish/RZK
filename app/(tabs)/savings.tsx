@@ -55,6 +55,7 @@ export default function Savings() {
   // Form state
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
+  const [riskTolerance, setRiskTolerance] = useState<"Conservative" | "Moderate" | "High Risk" | null>(null);
   const [invests, setInvests] = useState<boolean | null>(null);
   const [annualReturn, setAnnualReturn] = useState("");
   const [interestType, setInterestType] = useState<"simple" | "compound">("compound");
@@ -65,12 +66,18 @@ export default function Savings() {
   const [projectionNeeded, setProjectionNeeded] = useState<number | null>(null);
   const [showTrackPrompt, setShowTrackPrompt] = useState(false);
   const [track, setTrack] = useState(false);
+  const [projectionRange, setProjectionRange] = useState<{ min: number; max: number } | null>(null);
 
   // Savings and transactions state
   const [goals, setGoals] = useState<Goal[]>([]);
   const [amounts, setAmounts] = useState<Record<number, string>>({});
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [shownBadges, setShownBadges] = useState<Record<string, string[]>>({});
+
+   // Track expanded state per goal
+  const [expandedGoal, setExpandedGoal] = useState<string | null>(null);
+  const toggleGoal = (name: string) =>
+  setExpandedGoal(prev => (prev === name ? null : name));
 
   const parseNum = (s: string) => parseFloat(s.replace(/[^0-9.]/g, ""));
 
@@ -126,6 +133,7 @@ export default function Savings() {
       const mRate = r / 12;
       monthlyNeeded = (tgt * mRate) / (Math.pow(1 + mRate, monthsCount) - 1);
     }
+    
     setGoals((gs) => [
       ...gs,
       {
@@ -174,7 +182,7 @@ export default function Savings() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.select({ ios: "padding", android: undefined })}>
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
-          {/* Savings Projection Form */}
+           {/* Savings Projection Form */}
           <Text style={[styles.sectionTitle,{color:text}]}>Savings Projection</Text>
           <View style={[styles.card,{backgroundColor:cardBg,borderColor:border}]}>            
             <TextInput
@@ -202,7 +210,7 @@ export default function Savings() {
               </TouchableOpacity>
             </View>
             {invests && (
-              <>
+              <>                
                 <TextInput
                   style={[styles.input,{color:text,borderColor:subtext}]}
                   placeholder="Expected Annual Return (%)"
@@ -220,13 +228,24 @@ export default function Savings() {
                     <Text style={[styles.toggleTxt, interestType==="compound"&&styles.toggleTxtActive]}>Compound</Text>
                   </TouchableOpacity>
                 </View>
+                <Text style={[styles.questionText,{color:text}]}>Risk Tolerance</Text>
+                <View style={styles.toggleRow}>
+                  <TouchableOpacity style={[styles.toggleBtn, riskTolerance==="Conservative"&&styles.toggleBtnActive]} onPress={()=>setRiskTolerance("Conservative")}>
+                    <Text style={[styles.toggleTxt, riskTolerance==="Conservative"&&styles.toggleTxtActive]}>Conservative</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.toggleBtn, riskTolerance==="Moderate"&&styles.toggleBtnActive]} onPress={()=>setRiskTolerance("Moderate")}>
+                    <Text style={[styles.toggleTxt, riskTolerance==="Moderate"&&styles.toggleTxtActive]}>Moderate</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.toggleBtn, riskTolerance==="High Risk"&&styles.toggleBtnActive]} onPress={()=>setRiskTolerance("High Risk")}>
+                    <Text style={[styles.toggleTxt, riskTolerance==="High Risk"&&styles.toggleTxtActive]}>High Risk</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
             <Text style={[styles.questionText,{color:text}]}>Target Date</Text>
-            <TouchableOpacity onPress={()=>setShowDatePicker(true)} style={[styles.input,{justifyContent:"center",borderColor:subtext}]}>             
-               <Text style={{color:date?text:subtext}}>{date?date.toLocaleDateString("en-US"):"Select Date"}</Text>
+            <TouchableOpacity onPress={()=>setShowDatePicker(true)} style={[styles.input,{justifyContent:"center",borderColor:subtext}]}>              <Text style={{color:date?text:subtext}}>{date?date.toLocaleDateString("en-US"):"Select Date"}</Text>
             </TouchableOpacity>
-   {showDatePicker && <DateTimePicker
+            {showDatePicker && <DateTimePicker
                 value={date||new Date()}
                 mode="date"
                 display={Platform.OS==="android"?"calendar":"inline"}
@@ -234,7 +253,7 @@ export default function Savings() {
                 themeVariant={darkMode?"dark":"light"}
                 textColor={text}
                 onChange={(_,sd)=>{setShowDatePicker(false); if(sd) setDate(sd);}} />}
-              <TouchableOpacity style={[styles.button,{backgroundColor:primary}]} onPress={calculateProjection}>
+            <TouchableOpacity style={[styles.button,{backgroundColor:primary}]} onPress={calculateProjection}>
               <Text style={styles.buttonText}>Calculate Projection</Text>
             </TouchableOpacity>
           </View>
@@ -260,92 +279,102 @@ export default function Savings() {
 
           {/* Savings Tracker */}
           {track && goals.map((g, i) => {
-            const pct = Math.min(g.saved / g.target, 1);
-            const badges = earnedBadges(g);
-            const isComplete = g.saved >= g.target;
-            return (
-              <View key={i} style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
-                <Text style={[styles.goalName, { color: text }]}>{g.name}</Text>
-                <View style={styles.badgeContainer}>
-                  {BADGES.map(b => (
-                    <MaterialCommunityIcons
-                      key={b.id}
-                      name="medal-outline"
-                      size={24}
-                      color={badges.includes(b.id) ? primary : subtext}
-                      style={{ marginRight: 12 }}
-                    />
-                  ))}
-                </View>
-                <Text style={[styles.subheader, { color: subtext }]}>Time Left: {g.timeLeft}</Text>
-                <Text style={[styles.subheader, { color: subtext }]}>
-                  Monthly Needed: ﷼{g.monthlyNeeded.toLocaleString()}
-                </Text>
-                <View style={styles.targetContainer}>
-                  <Text style={[styles.targetAmount, { color: subtext }]}>
-                    ﷼{g.target.toLocaleString()}
-                  </Text>
-                </View>
-                <View style={styles.progressBar}>
-                  <View style={[styles.progressFill, { width: `${pct*100}%`, backgroundColor: primary }]} />
-                </View>
+  const isOpen     = expandedGoal === g.name;
+  const ownTx      = transactions.filter(t => t.goal === g.name);
+  const pct        = Math.min(g.saved / g.target, 1);
+  const badges     = earnedBadges(g);
 
-                {isComplete ? (
-                  <Text style={[styles.completedText, { color: text }]}>Completed</Text>
-                ) : (
-                  <View style={styles.row}>
-                    <TextInput
-                      style={[styles.input, styles.amountInput, { color: text, borderColor: subtext }]}
-                      placeholder="Amount (﷼)"
-                      placeholderTextColor={subtext}
-                      keyboardType="numeric"
-                      value={amounts[i]||""}
-                      onChangeText={t => setAmounts(a => ({ ...a, [i]: t }))}
-                    />
-                    <TouchableOpacity style={[styles.smallBtn, { backgroundColor: primary }]} onPress={() => addToGoal(i)}>
-                      <Text style={styles.buttonText}>+ Add</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.smallBtn, { backgroundColor: "#dc2626" }]} onPress={() => withdrawFromGoal(i)}>
-                      <Text style={styles.buttonText}>– Withdraw</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            );
-          })}
+  return (
+    <View key={g.name} style={{ marginBottom: 16 }}>
+      {/* Header */}
+      <TouchableOpacity
+        style={[styles.collapsibleHeader, { backgroundColor: cardBg, borderColor: border, borderWidth: 1 }]}
+        onPress={() => toggleGoal(g.name)}
+      >
+        <Text style={[styles.goalName, { color: text }]}>{g.name}</Text>
+        <Text style={[styles.toggleIcon, { color: text }]}>{isOpen ? '−' : '+'}</Text>
+      </TouchableOpacity>
 
-          {/* Transaction Log */}
-          {track && (
-            <>
-              <Text style={[styles.sectionTitle, { color: text }]}>Transaction Log</Text>
-              <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
-                {transactions.length === 0 ? (
-                  <Text style={[styles.noTrans, { color: subtext }]}>No transactions yet.</Text>
-                ) : (
-                  <FlatList
-                    data={transactions}
-                    keyExtractor={(_, idx) => idx.toString()}
-                    nestedScrollEnabled
-                    style={{ flexGrow: 0 }}
-                    renderItem={({ item }) => (
-                      <View style={styles.txRow}>
-                        <Text style={[
-                          styles.txText,
-                          { color: item.type === "Add" ? "#22c55e" : "#ef4444" }
-                        ]}>
-                          {item.type} ﷼{item.amount} {item.type === "Add" ? "to" : "from"} {item.goal}
-                        </Text>
-                        <Text style={[styles.txDate, { color: subtext }]}>
-                          {item.date.toLocaleDateString("en-US")}
-                        </Text>
-                      </View>
-                    )}
-                  />
-                )}
-              </View>
-            </>
+      {/* Expanded Content */}
+      {isOpen && (
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
+          {/* — Goal Summary — */}
+          <Text style={[styles.subheader, { color: text }]}>
+            Target: ﷼{g.target.toLocaleString()}
+          </Text>
+          <Text style={[styles.subheader, { color: text }]}>
+            Due by: {new Date(g.date).toLocaleDateString('en-US')}
+          </Text>
+          <Text style={[styles.subheader, { color: text }]}>
+            Saved: ﷼{g.saved.toLocaleString()}
+          </Text>
+          <Text style={[styles.subheader, { color: text }]}>
+            Monthly Needed: ﷼{g.monthlyNeeded.toLocaleString()}
+          </Text>
+
+          {/* — Badges & Progress — */}
+          <View style={styles.badgeContainer}>
+            {BADGES.map(b => (
+              <MaterialCommunityIcons
+                key={b.id}
+                name="medal-outline"
+                size={24}
+                color={badges.includes(b.id) ? primary : subtext}
+                style={{ marginRight: 8 }}
+              />
+            ))}
+          </View>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${pct * 100}%`, backgroundColor: primary }]} />
+          </View>
+
+          {/* — Add / Withdraw Controls — */}
+          {g.saved < g.target && (
+            <View style={styles.row}>
+              <TextInput
+                style={[styles.input, styles.amountInput, { color: text, borderColor: subtext }]}
+                placeholder="Amount (﷼)"
+                placeholderTextColor={subtext}
+                keyboardType="numeric"
+                value={amounts[i] || ''}
+                onChangeText={t => setAmounts(a => ({ ...a, [i]: t }))}
+              />
+              <TouchableOpacity style={[styles.smallBtn, { backgroundColor: primary }]} onPress={() => addToGoal(i)}>
+                <Text style={styles.buttonText}>+ Add</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.smallBtn, { backgroundColor: '#dc2626' }]} onPress={() => withdrawFromGoal(i)}>
+                <Text style={styles.buttonText}>– Withdraw</Text>
+              </TouchableOpacity>
+            </View>
           )}
 
+          {/* — This Goal’s Transaction Log — */}
+          <Text style={[styles.sectionTitle, { marginTop: 16, color: text }]}>Transactions</Text>
+          {ownTx.length === 0 ? (
+            <Text style={[styles.noTrans, { color: subtext }]}>No transactions yet.</Text>
+          ) : (
+            <FlatList
+              data={ownTx}
+              keyExtractor={(_, idx) => idx.toString()}
+              nestedScrollEnabled
+              style={{ flexGrow: 0 }}
+              renderItem={({ item }) => (
+                <View style={styles.txRow}>
+                  <Text style={[styles.txText, { color: item.type === 'Add' ? '#22c55e' : '#ef4444' }]}>
+                    {item.type} ﷼{item.amount}
+                  </Text>
+                  <Text style={[styles.txDate, { color: subtext }]}>
+                    {item.date.toLocaleDateString('en-US')}
+                  </Text>
+                </View>
+              )}
+            />
+          )}
+        </View>
+      )}
+    </View>
+  );
+})}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -394,6 +423,19 @@ const styles = StyleSheet.create({
 
   targetContainer:{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 },
   targetAmount:   { fontSize: 16, fontWeight: "600" },
+
+collapsibleHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: 12,
+  borderRadius: 8,
+  marginBottom: 8,
+},
+toggleIcon: {
+  fontSize: 18,
+  fontWeight: '600',
+},
 
   progressBar:   {
     height: 8,
