@@ -9,3 +9,6 @@ class WatchlistItem(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     symbol = Column(String)
     company_name = Column(String)
+
+    class Config:
+        orm_mode = True

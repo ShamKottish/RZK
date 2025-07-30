@@ -1,14 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import List
+
 from app.db.database import get_db
 from app.models import watchlist as model
+from app.schemas.watchlist import WatchlistItem, WatchlistItemOut
 from app.services.auth import get_current_user
-from app.models.watchlist import WatchlistItem
 
 router = APIRouter()
 
-
-@router.post("/watchlist/add")
+@router.post("/watchlist/add", response_model=WatchlistItemOut)
 def add_to_watchlist(
         item: WatchlistItem,
         db: Session = Depends(get_db),
@@ -19,17 +20,15 @@ def add_to_watchlist(
         symbol=item.symbol,
         company_name=item.company_name
     )
-    db.add(item)
+    db.add(watchlist_item)
     db.commit()
-    db.refresh(item)
-    return {"message": "Added to watchlist", "item": item}
+    db.refresh(watchlist_item)
+    return watchlist_item
 
-
-@router.get("/watchlist")
+@router.get("/watchlist", response_model=List[WatchlistItemOut])
 def get_watchlist(db: Session = Depends(get_db), user=Depends(get_current_user)):
     items = db.query(model.WatchlistItem).filter_by(user_id=user.id).all()
-    return [{"symbol": i.symbol, "company_name": i.company_name} for i in items]
-
+    return items
 
 @router.delete("/watchlist/{symbol}")
 def delete_from_watchlist(symbol: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
