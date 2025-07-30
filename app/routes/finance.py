@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.db.connection import SessionLocal
+from app.db.database import SessionLocal
 from app.models.user import User
 from app.services.openai_agent import get_financial_advice_from_chatbot
 

@@ -7,6 +7,8 @@ class UserCreate(BaseModel):
     email: EmailStr
     savings: float
     password: str
+    savings_goal: Optional[float] = None
+    current_savings: float = 0.0
 
 
 class UserResponse(BaseModel):
@@ -14,7 +16,6 @@ class UserResponse(BaseModel):
     name: str
     email: EmailStr
     savings: float
-    password: str
 
 
 class UserLogin(BaseModel):
