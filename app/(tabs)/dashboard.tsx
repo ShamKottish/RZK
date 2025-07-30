@@ -1,22 +1,31 @@
-// app/(tabs)/dashboard.tsx
 import Ionicons from "@expo/vector-icons/Ionicons";
-import React, { useEffect, useState } from "react";
-import {
-  Dimensions,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState, type ComponentProps } from "react";
+import { Dimensions, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width - 32;
 
-// ——————————————————————————————————————————————
-// TotalSavingsCard
-// ——————————————————————————————————————————————
+type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
+
+interface BadgeDef {
+  id: string;
+  title: string;
+  icon: IconName;
+  color: string;
+  threshold: number;
+}
+
+const BADGE_DEFS: BadgeDef[] = [
+  { id: "bronze",   title: "Bronze Saver",   icon: "medal-outline",  color: "#cd7f32", threshold: 0.25 },
+  { id: "silver",   title: "Silver Saver",   icon: "medal-outline",  color: "#c0c0c0", threshold: 0.50 },
+  { id: "gold",     title: "Gold Saver",     icon: "trophy-outline", color: "#ffd700", threshold: 0.75 },
+  { id: "platinum", title: "Platinum Saver", icon: "star-outline",   color: "#e5e4e2", threshold: 1.00 },
+];
+
 function TotalSavingsCard({
   total,
   completed,
@@ -31,7 +40,6 @@ function TotalSavingsCard({
   const text = darkMode ? "#f9fafb" : "#111827";
   const border = darkMode ? "#374151" : "#e5e7eb";
   const bg = darkMode ? "#1f2937" : "#ffffff";
-
   const pct = count ? Math.round((total / (count * 1000)) * 100) : 0;
 
   return (
@@ -51,33 +59,52 @@ function TotalSavingsCard({
   );
 }
 
-// ——————————————————————————————————————————————
-// WatchlistCard
-// ——————————————————————————————————————————————
-function WatchlistCard({ count }: { count: number }) {
+function EarnedBadgesSection({ badges }: { badges: BadgeDef[] }) {
   const { darkMode } = useTheme();
-  const subtext = darkMode ? "#d1d5db" : "#6b7280";
   const text = darkMode ? "#f9fafb" : "#111827";
-  const border = darkMode ? "#374151" : "#e5e7eb";
-  const bg = darkMode ? "#1f2937" : "#ffffff";
+  if (!badges.length) return null;
 
   return (
-    <View style={[styles.card, { backgroundColor: bg, borderColor: border }]}>
-      <View style={styles.cardHeader}>
-        <Text style={[styles.cardTitle, { color: text }]}>Watchlist</Text>
-        <Ionicons name="stats-chart-outline" size={20} color={subtext} />
-      </View>
-      <Text style={[styles.amount, { color: text }]}>{count} Stocks</Text>
-      <Text style={[styles.meta, { color: subtext }]}>
-        Tracking your investments
-      </Text>
+    <View style={{ marginVertical: 16 }}>
+      <Text style={[styles.sectionTitle, { color: text }]}>Earned Badges</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingLeft: 16 }}
+      >
+        {badges.map((b) => (
+          <View
+            key={b.id}
+            style={[
+              styles.card,
+              {
+                width: 100,
+                marginRight: 12,
+                alignItems: "center",
+                backgroundColor: `${b.color}22`,
+                borderColor: b.color,
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              name={b.icon}
+              size={36}
+              color={b.color}
+              style={{ marginBottom: 8 }}
+            />
+            <Text
+              numberOfLines={2}
+              style={{ color: text, fontSize: 12, textAlign: "center" }}
+            >
+              {b.title}
+            </Text>
+          </View>
+        ))}
+      </ScrollView>
     </View>
   );
 }
 
-// ——————————————————————————————————————————————
-// ActiveGoalsList
-// ——————————————————————————————————————————————
 function ActiveGoalsList({
   goals,
 }: {
@@ -90,9 +117,7 @@ function ActiveGoalsList({
   const bg = darkMode ? "#1f2937" : "#ffffff";
 
   const daysLeft = (iso: string) => {
-    const diff = Math.ceil(
-      (new Date(iso).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const diff = Math.ceil((new Date(iso).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     return diff > 0 ? diff : 0;
   };
 
@@ -126,76 +151,71 @@ function ActiveGoalsList({
   );
 }
 
-// ——————————————————————————————————————————————
-// Dashboard Screen
-// ——————————————————————————————————————————————
 export default function Dashboard() {
   const { darkMode } = useTheme();
   const bg = darkMode ? "#111827" : "#f9fafb";
+  const subtext = darkMode ? "#d1d5db" : "#6b7280";
+  const text = darkMode ? "#f9fafb" : "#111827";
+  const border = darkMode ? "#374151" : "#e5e7eb";
 
-  // placeholder state — swap out for API calls later
+  const router = useRouter();
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [totalSavings, setTotalSavings] = useState(0);
   const [goalsCompleted, setGoalsCompleted] = useState(0);
   const [goalsCount, setGoalsCount] = useState(0);
-  const [watchlistCount, setWatchlistCount] = useState(0);
   const [activeGoals, setActiveGoals] = useState<
     { name: string; saved: number; target: number; deadline: string }[]
   >([]);
+  const [earnedBadges, setEarnedBadges] = useState<BadgeDef[]>([]);
 
-    const daysLeft = (iso: string) => {
-    const diff = Math.ceil(
-      (new Date(iso).getTime() - new Date().getTime()) /
-        (1000 * 60 * 60 * 24)
-    );
-    return diff > 0 ? diff : 0;
-  };
-
-  // simulate fetching from API
   useEffect(() => {
-    // TODO: replace with real fetch(...)
+    AsyncStorage.getItem("userName").then((n) => n && setUserName(n));
+    AsyncStorage.getItem("userEmail").then((e) => e && setUserEmail(e));
+
     const mock = [
       { name: "Car Fund", saved: 12000, target: 20000, deadline: "2025-12-31" },
-      { name: "Vacation", saved: 3000, target: 5000, deadline: "2025-08-15" },
+      { name: "Vacation", saved: 5000, target: 5000, deadline: "2025-08-15" },
     ];
     setActiveGoals(mock);
-    setTotalSavings(mock.reduce((s, g) => s + g.saved, 0));
+    setTotalSavings(mock.reduce((sum, g) => sum + g.saved, 0));
     setGoalsCount(mock.length);
     setGoalsCompleted(mock.filter((g) => g.saved >= g.target).length);
-    setWatchlistCount(4);
+
+    const eb = BADGE_DEFS.filter((b) =>
+      mock.some((g) => g.saved / g.target >= b.threshold)
+    );
+    setEarnedBadges(eb);
   }, []);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={[styles.header, { color: darkMode ? "#f9fafb" : "#111827" }]}>
-          Financial Dashboard
-        </Text>
-        <Text
-          style={[
-            styles.subheader,
-            { color: darkMode ? "#d1d5db" : "#6b7280" },
-          ]}
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <TouchableOpacity
+          style={[styles.profileCard, { backgroundColor: bg, borderColor: border }]}
+          onPress={() => router.push("/profile")}
         >
+          <Ionicons name="person-circle-outline" size={40} color={subtext} />
+          <View style={{ marginLeft: 12 }}>
+            <Text style={[styles.profileName, { color: text }]}>
+              {userName || "Your Name"}
+            </Text>
+            <Text style={[styles.profileEmail, { color: subtext }]}>
+              {userEmail || "you@example.com"}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <Text style={[styles.header, { color: text }]}>Financial Dashboard</Text>
+        <Text style={[styles.subheader, { color: subtext }]}>
           Your financial health at a glance
         </Text>
 
-        <TotalSavingsCard
-          total={totalSavings}
-          completed={goalsCompleted}
-          count={goalsCount}
-        />
+        <TotalSavingsCard total={totalSavings} completed={goalsCompleted} count={goalsCount} />
 
-        <WatchlistCard count={watchlistCount} />
+        <EarnedBadgesSection badges={earnedBadges} />
 
-        <Text
-          style={[
-            styles.sectionTitle,
-            { color: darkMode ? "#f9fafb" : "#111827" },
-          ]}
-        >
+        <Text style={[styles.sectionTitle, { color: text }]}>
           Active Savings Goals
         </Text>
         <ActiveGoalsList goals={activeGoals} />
@@ -207,6 +227,18 @@ export default function Dashboard() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   container: { padding: 16, paddingBottom: 32 },
+  profileCard: {
+    width: CARD_WIDTH,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  profileName: { fontSize: 18, fontWeight: "600" },
+  profileEmail: { fontSize: 14 },
+
   header: { fontSize: 28, fontWeight: "700", marginBottom: 4 },
   subheader: { fontSize: 16, marginBottom: 16 },
   sectionTitle: { fontSize: 18, fontWeight: "600", marginVertical: 12 },

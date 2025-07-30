@@ -39,7 +39,7 @@ export default function Terms() {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={[styles.button, { backgroundColor: link }]} onPress={() => router.back()}>
-            <Text style={styles.buttonText}>I Agree</Text>
+            <Text style={styles.buttonText}>I have read the terms & conditions</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

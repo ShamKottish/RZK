@@ -10,12 +10,14 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../contexts/ThemeContext";
 
 export default function LoginScreen() {
@@ -28,6 +30,7 @@ export default function LoginScreen() {
   const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const insets = useSafeAreaInsets(); 
 
   const bg = darkMode ? "#111827" : "#f5f5f5";
   const text = darkMode ? "#f9fafb" : "#111827";
@@ -59,8 +62,22 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
-      <KeyboardAvoidingView
+<SafeAreaView
+  style={[
+    styles.safe,
+    {
+      backgroundColor: bg,
+      paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+    },
+  ]}
+>
+      {/* Customer Service Button */}
+      <View style={[styles.supportButton, { top: insets.top || 16 }]}>
+        <Pressable onPress={() => router.push("/support")}>
+          <Ionicons name="headset-outline" size={24} color={text} />
+        </Pressable>
+      </View>
+        <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.select({ ios: "padding", android: undefined })}
       >
@@ -178,48 +195,90 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  forgotText: { marginTop: 8, fontSize: 14, textDecorationLine: "underline" },
-  safe: { flex: 1 },
-  container: { flex: 1 },
-  inner: { flex: 1, alignItems: "center", paddingTop: 44 },
+  safe: {
+    flex: 1,
+    backgroundColor: "#6b21a8",
+  },
+  container: {
+    flex: 1,
+  },
+  inner: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
   brandTitle: {
-    fontSize: 25,
-    fontWeight: "800",
-    marginBottom: 200,
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 24,
   },
   title: {
-    fontSize: 36,
+    fontSize: 28,
     fontWeight: "700",
+    color: "#fff",
     marginBottom: 24,
-    textAlign: "center",
   },
   inputGroup: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
+    backgroundColor: "rgba(109,40,217,0.6)",
+    borderRadius: 12,
+    paddingHorizontal: 16,
     marginBottom: 16,
-    width: "90%",
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
   },
-  input: { flex: 1, height: 48, marginLeft: 8 },
+  input: {
+    flex: 1,
+    height: 50,
+    marginLeft: 12,
+    color: "#fff",
+  },
   signupPrompt: {
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: 16,
+    marginVertical: 12,
   },
-  promptText: { fontSize: 14 },
-  linkText: { fontSize: 14, fontWeight: "600" },
+  promptText: {
+    fontSize: 14,
+    color: "#e5e7eb",
+  },
+  linkText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  forgotText: {
+    marginTop: 8,
+    fontSize: 14,
+    textDecorationLine: "underline",
+    color: "#fff",
+  },
   button: {
-    height: 48,
-    borderRadius: 8,
+    height: 50,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 8,
-    width: "90%",
+    width: "100%",
+    backgroundColor: "#fff",
   },
+  supportButton: {
+  position: "absolute",
+  top: 16,
+  left: 16,
+  zIndex: 10,
+},
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  demoHint: { marginTop: 16, fontStyle: "italic", fontSize: 12 },
-  error: { color: "#dc2626", marginBottom: 12, textAlign: "center" },
+  buttonText: { color: "#6b21a8", fontSize: 16, fontWeight: "700" },
+  demoHint: {
+    marginTop: 16,
+    fontStyle: "italic",
+    fontSize: 12,
+    color: "#d1d5db",
+  },
+  error: { color: "#fecaca", marginBottom: 12, textAlign: "center" },
 });

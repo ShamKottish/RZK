@@ -22,125 +22,163 @@ import {
 export default function Settings() {
   const router = useRouter();
   const navigation = useNavigation();
-  const {
-    darkMode,
-    setDarkMode,
-    language,
-    setLanguage,
-    t, // <-- our translator
-  } = useTheme();
+  const { darkMode, setDarkMode, language, setLanguage, t } = useTheme();
+
+  // placeholder user info
+  const [userName] = useState("John Doe");
+  const [userEmail] = useState("john.doe@example.com");
+
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   const toggleNotifications = async (value: boolean) => {
     if (value) {
       const { status } = await Notifications.requestPermissionsAsync();
-      setNotificationsEnabled(status === 'granted');
+      setNotificationsEnabled(status === "granted");
     } else {
       setNotificationsEnabled(false);
     }
   };
 
-  const handleCustomerService = () => {
-    Linking.openURL('mailto:support@rzkfinance.com?subject=Customer%20Support');
-  };
+  const handleCustomerService = () =>
+    Linking.openURL("mailto:support@rzkfinance.com?subject=Customer%20Support");
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('userToken');
+      await AsyncStorage.removeItem("userToken");
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'login' }],
+          routes: [{ name: "login" }],
         })
       );
     } catch {
-      Alert.alert('Error', 'Unable to log out. Please try again.');
+      Alert.alert("Error", "Unable to log out. Please try again.");
     }
   };
 
-  const bg = darkMode ? '#111827' : '#f9fafb';
-  const cardBg = darkMode ? '#1f2937' : '#ffffff';
-  const text = darkMode ? '#f9fafb' : '#111827';
-  const subtext = darkMode ? '#d1d5db' : '#6b7280';
-  const border = darkMode ? '#374151' : '#e5e7eb';
+  const bg = darkMode ? "#111827" : "#f9fafb";
+  const cardBg = darkMode ? "#1f2937" : "#ffffff";
+  const text = darkMode ? "#f9fafb" : "#111827";
+  const subtext = darkMode ? "#d1d5db" : "#6b7280";
+  const border = darkMode ? "#374151" : "#e5e7eb";
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
-      <StatusBar style={darkMode ? 'light' : 'dark'} />
-
+      <StatusBar style={darkMode ? "light" : "dark"} />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={[styles.header, { color: text }]}>Settings</Text>
+
+        {/* Profile Information */}
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
+          <Text style={[styles.cardTitle, { color: text }]}>Profile Information</Text>
+          <View style={[styles.row, { borderColor: border }]}>
+            <Text style={[styles.optionLabel, { color: text }]}>Name</Text>
+            <Text style={[styles.valueLabel, { color: subtext }]}>{userName}</Text>
+          </View>
+          <View style={[styles.row, { borderColor: border }]}>
+            <Text style={[styles.optionLabel, { color: text }]}>Email</Text>
+            <Text style={[styles.valueLabel, { color: subtext }]}>{userEmail}</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.row, { borderColor: border }]}
+            onPress={() => router.push("/profile")}
+          >
+            <Text style={[styles.linkLabel, { color: "#2563eb" }]}>View Profile</Text>
+            <Text style={[styles.arrow, { color: subtext }]}>&gt;</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Preferences */}
         <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
           <Text style={[styles.cardTitle, { color: text }]}>Preferences</Text>
 
-          {/* Dark Mode */}
           <View style={[styles.row, { borderColor: border }]}>
             <Text style={[styles.optionLabel, { color: text }]}>Dark Mode</Text>
             <Switch
               value={darkMode}
               onValueChange={setDarkMode}
-              trackColor={{ false: '#767577', true: '#8b5cf6' }}
-              thumbColor={darkMode ? '#fff' : '#f4f3f4'}
+              trackColor={{ false: "#767577", true: "#8b5cf6" }}
+              thumbColor={darkMode ? "#fff" : "#f4f3f4"}
             />
           </View>
 
-          {/* Notifications */}
           <View style={[styles.row, { borderColor: border }]}>
             <Text style={[styles.optionLabel, { color: text }]}>Notifications</Text>
             <Switch
               value={notificationsEnabled}
               onValueChange={toggleNotifications}
-              trackColor={{ false: '#767577', true: '#8b5cf6' }}
-              thumbColor={notificationsEnabled ? '#fff' : '#f4f3f4'}
+              trackColor={{ false: "#767577", true: "#8b5cf6" }}
+              thumbColor={notificationsEnabled ? "#fff" : "#f4f3f4"}
             />
           </View>
 
-          {/* Language */}
           <TouchableOpacity
-            style={[styles.row, { borderColor: darkMode ? "#374151" : "#e5e7eb" }]}
+            style={[styles.row, { borderColor: border }]}
             onPress={() => setLanguage(language === "en" ? "ar" : "en")}
           >
-            <Text style={[styles.optionLabel, { color: darkMode ? "#f9fafb" : "#111827" }]}>
-              {t("language")}: {language === "en" ? "English" : "العربية"}
+            <Text style={[styles.optionLabel, { color: text }]}>
+              Language: {language === "en" ? "English" : "العربية"}
             </Text>
-            <Ionicons name="language-outline" size={20} color={darkMode ? "#d1d5db" : "#6b7280"} />
+            <Ionicons name="language-outline" size={20} color={subtext} />
           </TouchableOpacity>
         </View>
 
         {/* Account */}
         <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
           <Text style={[styles.cardTitle, { color: text }]}>Account</Text>
-
-          <TouchableOpacity style={[styles.row, { borderColor: border }]}>
-            <Text style={[styles.linkLabel, { color: '#2563eb' }]}>Change Password</Text>
+ <TouchableOpacity
+          style={[styles.row, { borderColor: border }]}
+          onPress={() => router.push("/forgot-password")}
+          >
+            <Text style={[styles.linkLabel, { color: "#2563eb" }]}>
+              Change Password
+            </Text>
             <Text style={[styles.arrow, { color: subtext }]}>&gt;</Text>
-          </TouchableOpacity>
-
+          </TouchableOpacity>            
+       
           <TouchableOpacity
             style={[styles.row, { borderColor: border }]}
             onPress={handleCustomerService}
           >
-            <Text style={[styles.linkLabel, { color: '#2563eb' }]}>Customer Service</Text>
+            <Text style={[styles.linkLabel, { color: "#2563eb" }]}>Customer Service</Text>
             <Text style={[styles.arrow, { color: subtext }]}>&gt;</Text>
           </TouchableOpacity>
         </View>
 
-        {/* About */}
+        {/* About RZK */}
         <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
-          <Text style={[styles.cardTitle, { color: text }]}>About</Text>
+          <Text style={[styles.cardTitle, { color: text }]}>About RZK</Text>
+          <Text style={[styles.optionLabel, { color: text, marginBottom: 8 }]}>
+            RZK Finance helps you set savings goals, track progress, and earn badges as you save.
+          </Text>
+          <TouchableOpacity
+            style={[styles.row, { borderColor: border }]}
+            onPress={() => Linking.openURL("https://rzkfinance.com")}
+          >
+            <Text style={[styles.linkLabel, { color: "#2563eb" }]}>Visit Our Website</Text>
+            <Text style={[styles.arrow, { color: subtext }]}>&gt;</Text>
+          </TouchableOpacity>
+        </View>
 
+        {/* Terms & Privacy */}
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
+          <Text style={[styles.cardTitle, { color: text }]}>Legal</Text>
           <View style={[styles.row, { borderColor: border }]}>
             <Text style={[styles.optionLabel, { color: text }]}>App Version</Text>
             <Text style={[styles.valueLabel, { color: subtext }]}>1.0.0</Text>
           </View>
-
           <TouchableOpacity
             style={[styles.row, { borderColor: border }]}
-            onPress={() => router.push('/terms')}
+            onPress={() => router.push("/terms")}
           >
-            <Text style={[styles.linkLabel, { color: '#2563eb' }]}>Terms of Service</Text>
+            <Text style={[styles.linkLabel, { color: "#2563eb" }]}>Terms of Service</Text>
+            <Text style={[styles.arrow, { color: subtext }]}>&gt;</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.row, { borderColor: border }]}
+            onPress={() => router.push("/privacy")}
+          >
+            <Text style={[styles.linkLabel, { color: "#2563eb" }]}>Privacy Policy</Text>
             <Text style={[styles.arrow, { color: subtext }]}>&gt;</Text>
           </TouchableOpacity>
         </View>
@@ -150,7 +188,7 @@ export default function Settings() {
           style={[styles.logoutBtn, { borderColor: border, backgroundColor: cardBg }]}
           onPress={handleLogout}
         >
-          <Text style={[styles.logoutText, { color: '#ef4444' }]}>Log Out</Text>
+          <Text style={[styles.logoutText, { color: "#ef4444" }]}>Log Out</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -161,42 +199,42 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   container: { padding: 16 },
 
-  header: { fontSize: 28, fontWeight: '700', marginBottom: 24 },
+  header: { fontSize: 28, fontWeight: "700", marginBottom: 24 },
 
   card: {
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  cardTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
+  cardTitle: { fontSize: 18, fontWeight: "600", marginBottom: 12 },
 
   row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   optionLabel: { fontSize: 16 },
+  valueLabel: { fontSize: 16 },
   linkLabel: { fontSize: 16 },
   arrow: { fontSize: 16 },
-  valueLabel: { fontSize: 16 },
 
   logoutBtn: {
     borderWidth: 1,
     borderRadius: 8,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 8,
   },
   logoutText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

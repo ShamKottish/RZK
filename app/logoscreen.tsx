@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 
 // Metro‑compatible require
-const logo = require('../assets/images/fin3d.png');
+const logo = require('../assets/images/rzksimple.png');
 
 export default function LogoScreen() {
   const router = useRouter();
@@ -20,7 +20,7 @@ export default function LogoScreen() {
       }),
       // hold at 1 for 500ms
       Animated.delay(500),
-      // fade out → 0
+      // fade out → 1
       Animated.timing(opacity, {
         toValue: 0,
         duration: 800,

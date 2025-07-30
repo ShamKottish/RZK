@@ -3,18 +3,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -93,7 +93,7 @@ export default function ForgotPasswordScreen() {
 
             <Pressable onPress={() => router.back()}>
               <Text style={[styles.backText, { color: '#8b5cf6' }]}>
-                ← Back to Login
+                ← Back 
               </Text>
             </Pressable>
           </View>

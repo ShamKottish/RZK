@@ -160,16 +160,15 @@ export default function SignUpScreen() {
                 <Text style={[styles.prefix, { color: text }]}>+966</Text>
                 <TextInput
                   style={[styles.input, { color: text, marginLeft: 4 }]}
-                  placeholder="712345678"
+                  placeholder="5********"
                   placeholderTextColor={placeholder}
                   keyboardType="phone-pad"
                   value={phone}
                   onChangeText={t => setPhone(t.replace(/\D/g, ""))}
                 />
               </View>
-
+ 
               {/* Birthday */}
-              <Text style={[styles.label, { color: text }]}>Birthday</Text>
               <Pressable
                 style={[
                   styles.inputGroup,
@@ -178,7 +177,7 @@ export default function SignUpScreen() {
                 onPress={() => setShowBirthdayPicker(true)}
               >
                 <Text style={{ color: birthday ? text : placeholder }}>
-                  {birthday ? birthday.toLocaleDateString('en-US') : 'Select Date'}
+                  {birthday ? birthday.toLocaleDateString('en-US') : 'Choose Your Birthday'}
                 </Text>
               </Pressable>
               {showBirthdayPicker && (
@@ -186,6 +185,8 @@ export default function SignUpScreen() {
                   value={birthday || new Date()}
                   mode="date"
                   display={Platform.OS === 'android' ? 'calendar' : 'inline'}
+                  themeVariant={darkMode ? "dark" : "light"} 
+                  textColor={text} 
                   onChange={(e: DateTimePickerEvent, d?: Date) => {
                     setShowBirthdayPicker(false);
                     if (d) setBirthday(d);

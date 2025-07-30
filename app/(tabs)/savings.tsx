@@ -66,8 +66,8 @@ export default function Savings() {
   const [projectionNeeded, setProjectionNeeded] = useState<number | null>(null);
   const [showTrackPrompt, setShowTrackPrompt] = useState(false);
   const [track, setTrack] = useState(false);
-  const [projectionRange, setProjectionRange] = useState<{ min: number; max: number } | null>(null);
-
+  const [projectionMin, setProjectionMin] = useState<number | null>(null);
+  const [projectionMax, setProjectionMax] = useState<number | null>(null);
   // Savings and transactions state
   const [goals, setGoals] = useState<Goal[]>([]);
   const [amounts, setAmounts] = useState<Record<number, string>>({});
@@ -134,6 +134,16 @@ export default function Savings() {
       monthlyNeeded = (tgt * mRate) / (Math.pow(1 + mRate, monthsCount) - 1);
     }
     
+     // apply ± delta based on risk tolerance
+   const deltaMap: Record<string, number> = {
+      "Conservative": 0.005,
+      "Moderate":      0.02,
+      "High Risk":     0.04
+    };
+    const delta = riskTolerance ? deltaMap[riskTolerance] : 0;
+    const minMonthly = parseFloat((monthlyNeeded * (1 - delta)).toFixed(2));
+    const maxMonthly = parseFloat((monthlyNeeded * (1 + delta)).toFixed(2));
+
     setGoals((gs) => [
       ...gs,
       {
@@ -145,7 +155,8 @@ export default function Savings() {
         saved: 0,
       },
     ]);
-    setProjectionNeeded(parseFloat(monthlyNeeded.toFixed(2)));
+    setProjectionMin(minMonthly);
+    setProjectionMax(maxMonthly);    
     setShowTrackPrompt(true);
     setName("");
     setTarget("");
@@ -248,6 +259,7 @@ export default function Savings() {
             {showDatePicker && <DateTimePicker
                 value={date||new Date()}
                 mode="date"
+                minimumDate={new Date()}
                 display={Platform.OS==="android"?"calendar":"inline"}
                 locale="en-US"
                 themeVariant={darkMode?"dark":"light"}
@@ -259,23 +271,40 @@ export default function Savings() {
           </View>
 
           {/* Inline Projection & Track Prompt */}
-          {projectionNeeded!==null && showTrackPrompt && (
-            <View style={[styles.card,{backgroundColor:cardBg,borderColor:border}]}>              
-              <Text style={[styles.subheader,{color:text}]}>To achieve your goal, save ﷼{projectionNeeded.toLocaleString()} a month</Text>
-              <Text style={[styles.questionText,{color:text}]}>Would you like to track your savings?</Text>
-              <View style={styles.toggleRow}>
-                <TouchableOpacity style={[styles.toggleBtn, track===true&&styles.toggleBtnActive]} onPress={()=>{setTrack(true); setShowTrackPrompt(false);}}>
-                  <Text style={[styles.toggleTxt, track===true&&styles.toggleTxtActive]}>Yes</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.toggleBtn, track === false && styles.toggleBtnActive]}
-                  onPress={() => { setTrack(false); setShowTrackPrompt(false); }}
-                >
-                  <Text style={[styles.toggleTxt, track === false && styles.toggleTxtActive]}>No</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
+         {projectionMin !== null && projectionMax !== null && (
+  <View style={{ marginBottom: 16 }}>
+    <Text style={[styles.subheader, { color: text }]}>
+      To achieve your goal, save between ﷼{projectionMin.toLocaleString()}
+      {' '}and ﷼{projectionMax.toLocaleString()} a month
+    </Text>
+
+    {showTrackPrompt && (
+      <>
+        <Text style={[styles.questionText, { color: text }]}>Would you like to track your savings?</Text>
+        <View style={styles.toggleRow}>
+          <TouchableOpacity
+            style={[styles.toggleBtn, track === true && styles.toggleBtnActive]}
+            onPress={() => {
+              setTrack(true);
+              setShowTrackPrompt(false);
+            }}
+          >
+            <Text style={[styles.toggleTxt, track === true && styles.toggleTxtActive]}>Yes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleBtn, track === false && styles.toggleBtnActive]}
+            onPress={() => {
+              setTrack(false);
+              setShowTrackPrompt(false);
+            }}
+          >
+            <Text style={[styles.toggleTxt, track === false && styles.toggleTxtActive]}>No</Text>
+          </TouchableOpacity>
+        </View>
+      </>
+    )}
+  </View>
+)}
 
           {/* Savings Tracker */}
           {track && goals.map((g, i) => {
@@ -287,12 +316,14 @@ export default function Savings() {
   return (
     <View key={g.name} style={{ marginBottom: 16 }}>
       {/* Header */}
-      <TouchableOpacity
+           <TouchableOpacity
         style={[styles.collapsibleHeader, { backgroundColor: cardBg, borderColor: border, borderWidth: 1 }]}
         onPress={() => toggleGoal(g.name)}
       >
         <Text style={[styles.goalName, { color: text }]}>{g.name}</Text>
-        <Text style={[styles.toggleIcon, { color: text }]}>{isOpen ? '−' : '+'}</Text>
+        <Text style={[styles.toggleIcon, { color: text }]}>
+          {isOpen ? '−' : '+'}
+        </Text>
       </TouchableOpacity>
 
       {/* Expanded Content */}
@@ -370,6 +401,12 @@ export default function Savings() {
               )}
             />
           )}
+           {/* — Completed Banner — */}
+          {g.saved >= g.target && (
+            <Text style={[styles.completedText, { color: text }]}>
+              Completed
+            </Text>
+         )}
         </View>
       )}
     </View>
