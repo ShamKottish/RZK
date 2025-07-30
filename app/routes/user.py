@@ -7,6 +7,7 @@ from app.models.user import User
 from app.schemas.user import UserResponse, UserCreate, UserLogin
 from app.services.auth import hash_password, verify_password, create_access_token
 from app.services.auth import get_current_user
+from app.db.database import get_db
 
 
 def create_user(user: UserCreate, db: Session):
@@ -25,14 +26,15 @@ def create_user(user: UserCreate, db: Session):
 
 router = APIRouter()
 
-
-# Dependency
-def get_db():
+# will delete later
+'''def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+'''
 
 
 # Get all users

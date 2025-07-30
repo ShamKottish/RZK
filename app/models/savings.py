@@ -6,9 +6,9 @@ from app.db.database import Base
 class SavingsGoal(Base):
     __tablename__ = "savings_goals"
 
-    # check if these are needed later
-    # id = Column(Integer, primary_key=True, index=True)
-    # user_id = Column(Integer, ForeignKey("users.id"))
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
     goal_name = Column(String, nullable=False)
     target_amount = Column(Float, nullable=False)
     target_date = Column(Date, nullable=False)

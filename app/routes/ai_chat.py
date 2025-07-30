@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from services.ai_agent import get_financial_advice_from_chatbot
+from app.services.openai_agent import get_financial_advice_from_chatbot
 
 router = APIRouter(prefix="/ai", tags=["AI Chat"])
 
