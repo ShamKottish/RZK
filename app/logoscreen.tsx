@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 
 // Metro‑compatible require
-const logo = require('../assets/images/rzksimple.png');
+const logo = require('../assets/images/rizksimple.jpeg');
 
 export default function LogoScreen() {
   const router = useRouter();
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 1000,
-    height: 6100,
+    width: 550,
+    height: 1300,
   },
 });
