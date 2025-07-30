@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from app.db.database import Base
 
 
-class SavingsGoal(Base):
+'''class SavingsGoal(Base):
     __tablename__ = "savings_goals"
 
 
@@ -19,3 +19,4 @@ class SavingsGoal(Base):
     risk_tolerance = Column(String)
 
     user = relationship("User", back_populates="savings_goals")
+'''

@@ -1,5 +1,6 @@
 # password authentication, for security and not mixing up users.
 
+import os
 from passlib.context import CryptContext
 import jwt
 from datetime import datetime, timedelta
@@ -21,7 +22,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-SECRET_KEY = "your-secret-key" # change to a secret key
+SECRET_KEY = os.getenv("SECRET_KEY", "fallback-dev-secret")            # change to a secret key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token validity duration (changable)
 
@@ -34,7 +35,7 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/login")
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:

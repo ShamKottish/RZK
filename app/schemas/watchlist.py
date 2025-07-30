@@ -9,7 +9,6 @@ class WatchlistItemCreate(WatchlistItem):
 
 class WatchlistItemOut(WatchlistItem):
     id: int
-    symbol: str
     user_id: int
 
     class Config:
