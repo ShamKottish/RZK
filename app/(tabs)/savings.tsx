@@ -1,8 +1,8 @@
 // app/(tabs)/savings.tsx
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
-import React, { useState } from "react";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -18,7 +18,6 @@ import {
   View,
 } from "react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-
 
 interface Goal {
   name: string;
@@ -36,8 +35,16 @@ interface Transaction {
   date: Date;
 }
 
+const BADGES = [
+  { id: "bronze", title: "Bronze Saver", threshold: 0.25 },
+  { id: "silver", title: "Silver Saver", threshold: 0.5 },
+  { id: "gold", title: "Gold Saver", threshold: 0.75 },
+  { id: "platinum", title: "Platinum Saver", threshold: 1.0 },
+];
+
 export default function Savings() {
   const { darkMode } = useTheme();
+  const router = useRouter();
   const bg = darkMode ? "#111827" : "#f9fafb";
   const cardBg = darkMode ? "#1f2937" : "#ffffff";
   const text = darkMode ? "#f9fafb" : "#111827";
@@ -45,7 +52,7 @@ export default function Savings() {
   const border = darkMode ? "#374151" : "#e5e7eb";
   const primary = "#8b5cf6";
 
-  // Projection form state
+  // Form state
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
   const [invests, setInvests] = useState<boolean | null>(null);
@@ -53,56 +60,85 @@ export default function Savings() {
   const [interestType, setInterestType] = useState<"simple" | "compound">("compound");
   const [date, setDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [track, setTrack] = useState<boolean | null>(null);
 
-  // Tracking state
+  // Projection & tracking prompt
+  const [projectionNeeded, setProjectionNeeded] = useState<number | null>(null);
+  const [showTrackPrompt, setShowTrackPrompt] = useState(false);
+  const [track, setTrack] = useState(false);
+
+  // Savings and transactions state
   const [goals, setGoals] = useState<Goal[]>([]);
   const [amounts, setAmounts] = useState<Record<number, string>>({});
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [shownBadges, setShownBadges] = useState<Record<string, string[]>>({});
 
   const parseNum = (s: string) => parseFloat(s.replace(/[^0-9.]/g, ""));
 
+  // Compute earned badges
+  const earnedBadges = (g: Goal) => {
+    const pct = g.saved / g.target;
+    return BADGES.filter((b) => pct >= b.threshold).map((b) => b.id);
+  };
+
+  // Alert on new badge
+  useEffect(() => {
+    goals.forEach((g) => {
+      const earned = earnedBadges(g);
+      const shown = shownBadges[g.name] || [];
+      const newOnes = earned.filter((id) => !shown.includes(id));
+      if (newOnes.length > 0) {
+        const def = BADGES.find((b) => b.id === newOnes[0])!;
+        Alert.alert(
+          "🎉 Congratulations!",
+          `You earned the "${def.title}" badge on "${g.name}". You can view it on your dashboard.`,
+          [
+            { text: "OK", style: "cancel" },
+            { text: "View", onPress: () => router.push("/dashboard") },
+          ]
+        );
+        setShownBadges((sb) => ({
+          ...sb,
+          [g.name]: [...(sb[g.name] || []), ...newOnes],
+        }));
+      }
+    });
+  }, [goals, shownBadges, router]);
+
+  // Calculate projection and show prompt
   const calculateProjection = () => {
-    if (!name || !target || !date || invests === null || track === null) {
-      return Alert.alert("Please complete all fields & questions.");
+    if (!name || !target || !date || invests === null) {
+      Alert.alert("Please complete all fields.");
+      return;
     }
     const tgt = parseNum(target);
     const now = new Date();
-    const then = date!;
-    if (isNaN(tgt) || then <= now) {
-      return Alert.alert("Enter a valid target & future date.");
+    if (isNaN(tgt) || date <= now) {
+      Alert.alert("Enter a valid target amount and a future date.");
+      return;
     }
-
-    // compute time left
-    const diffDays = Math.ceil((then.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     const months = Math.floor(diffDays / 30);
     const days = diffDays % 30;
-    const timeLeft = months > 0 ? `${months} mo ${days} d` : `${diffDays} d`;
     const monthsCount = months + (days > 0 ? 1 : 0);
-
-    // compute monthly needed
     const r = invests ? parseNum(annualReturn) / 100 : 0;
-    let monthlyNeeded: number;
+    let monthlyNeeded = tgt / monthsCount;
     if (r > 0 && interestType === "compound") {
       const mRate = r / 12;
       monthlyNeeded = (tgt * mRate) / (Math.pow(1 + mRate, monthsCount) - 1);
-    } else {
-      monthlyNeeded = tgt / monthsCount;
     }
-
-    setGoals([
-      ...goals,
+    setGoals((gs) => [
+      ...gs,
       {
         name,
         target: tgt,
-        date: then.toISOString(),
-        timeLeft,
+        date: date.toISOString(),
+        timeLeft: months > 0 ? `${months} mo ${days} d` : `${diffDays} d`,
         monthlyNeeded: parseFloat(monthlyNeeded.toFixed(2)),
         saved: 0,
       },
     ]);
-
-    // reset form (keep `track`)
+    setProjectionNeeded(parseFloat(monthlyNeeded.toFixed(2)));
+    setShowTrackPrompt(true);
     setName("");
     setTarget("");
     setInvests(null);
@@ -111,207 +147,169 @@ export default function Savings() {
     setDate(null);
   };
 
+  // Transactions handlers
   const addToGoal = (i: number) => {
     const amt = parseNum(amounts[i] || "");
     if (!amt) return;
-    const goal = goals[i];
-    const updated = { ...goal, saved: goal.saved + amt };
-    setGoals(gs => gs.map((g, idx) => (idx === i ? updated : g)));
-    setAmounts(a => ({ ...a, [i]: "" }));
-    setTransactions(t => [
-      { goal: goal.name, type: "Add", amount: amt, date: new Date() },
-      ...t,
+    setGoals((gs) => gs.map((g, idx) => (idx === i ? { ...g, saved: g.saved + amt } : g)));
+    setAmounts((a) => ({ ...a, [i]: "" }));
+    setTransactions((ts) => [
+      { goal: goals[i].name, type: "Add", amount: amt, date: new Date() },
+      ...ts,
     ]);
   };
-
   const withdrawFromGoal = (i: number) => {
     const amt = parseNum(amounts[i] || "");
     if (!amt) return;
-    const goal = goals[i];
-    const updated = { ...goal, saved: Math.max(0, goal.saved - amt) };
-    setGoals(gs => gs.map((g, idx) => (idx === i ? updated : g)));
-    setAmounts(a => ({ ...a, [i]: "" }));
-    setTransactions(t => [
-      { goal: goal.name, type: "Withdraw", amount: amt, date: new Date() },
-      ...t,
+    setGoals((gs) => gs.map((g, idx) => (idx === i ? { ...g, saved: Math.max(0, g.saved - amt) } : g)));
+    setAmounts((a) => ({ ...a, [i]: "" }));
+    setTransactions((ts) => [
+      { goal: goals[i].name, type: "Withdraw", amount: amt, date: new Date() },
+      ...ts,
     ]);
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        { backgroundColor: bg, paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0 },
-      ]}
-    >
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.select({ ios: "padding", android: undefined })}
-      >
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg, paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0 }]}>      
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.select({ ios: "padding", android: undefined })}>
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
-          {/* Projection Section */}
-          <Text style={[styles.sectionTitle, { color: text }]}>Savings Projection</Text>
-          <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
+          {/* Savings Projection Form */}
+          <Text style={[styles.sectionTitle,{color:text}]}>Savings Projection</Text>
+          <View style={[styles.card,{backgroundColor:cardBg,borderColor:border}]}>            
             <TextInput
-              style={[styles.input, { color: text, borderColor: subtext }]}
+              style={[styles.input,{color:text,borderColor:subtext}]}
               placeholder="Goal Name"
               placeholderTextColor={subtext}
               value={name}
               onChangeText={setName}
             />
             <TextInput
-              style={[styles.input, { color: text, borderColor: subtext }]}
+              style={[styles.input,{color:text,borderColor:subtext}]}
               placeholder="Target Amount (﷼)"
               placeholderTextColor={subtext}
               keyboardType="numeric"
               value={target}
               onChangeText={setTarget}
             />
-
-            <Text style={[styles.questionText, { color: text }]}>Do you invest?</Text>
+            <Text style={[styles.questionText,{color:text}]}>Do you invest?</Text>
             <View style={styles.toggleRow}>
-              <TouchableOpacity
-                style={[styles.toggleBtn, invests === true && styles.toggleBtnActive]}
-                onPress={() => setInvests(true)}
-              >
-                <Text style={[styles.toggleTxt, invests === true && styles.toggleTxtActive]}>Yes</Text>
+              <TouchableOpacity style={[styles.toggleBtn, invests===true&&styles.toggleBtnActive]} onPress={()=>setInvests(true)}>
+                <Text style={[styles.toggleTxt, invests===true&&styles.toggleTxtActive]}>Yes</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.toggleBtn, invests === false && styles.toggleBtnActive]}
-                onPress={() => setInvests(false)}
-              >
-                <Text style={[styles.toggleTxt, invests === false && styles.toggleTxtActive]}>No</Text>
+              <TouchableOpacity style={[styles.toggleBtn, invests===false&&styles.toggleBtnActive]} onPress={()=>setInvests(false)}>
+                <Text style={[styles.toggleTxt, invests===false&&styles.toggleTxtActive]}>No</Text>
               </TouchableOpacity>
             </View>
-
             {invests && (
               <>
                 <TextInput
-                  style={[styles.input, { color: text, borderColor: subtext }]}
+                  style={[styles.input,{color:text,borderColor:subtext}]}
                   placeholder="Expected Annual Return (%)"
                   placeholderTextColor={subtext}
                   keyboardType="numeric"
                   value={annualReturn}
                   onChangeText={setAnnualReturn}
                 />
-                <Text style={[styles.questionText, { color: text }]}>Interest Type</Text>
+                <Text style={[styles.questionText,{color:text}]}>Interest Type</Text>
                 <View style={styles.toggleRow}>
-                  <TouchableOpacity
-                    style={[styles.toggleBtn, interestType === "simple" && styles.toggleBtnActive]}
-                    onPress={() => setInterestType("simple")}
-                  >
-                    <Text style={[styles.toggleTxt, interestType === "simple" && styles.toggleTxtActive]}>Simple</Text>
+                  <TouchableOpacity style={[styles.toggleBtn, interestType==="simple"&&styles.toggleBtnActive]} onPress={()=>setInterestType("simple")}>
+                    <Text style={[styles.toggleTxt, interestType==="simple"&&styles.toggleTxtActive]}>Simple</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.toggleBtn, interestType === "compound" && styles.toggleBtnActive]}
-                    onPress={() => setInterestType("compound")}
-                  >
-                    <Text style={[styles.toggleTxt, interestType === "compound" && styles.toggleTxtActive]}>Compound</Text>
+                  <TouchableOpacity style={[styles.toggleBtn, interestType==="compound"&&styles.toggleBtnActive]} onPress={()=>setInterestType("compound")}>
+                    <Text style={[styles.toggleTxt, interestType==="compound"&&styles.toggleTxtActive]}>Compound</Text>
                   </TouchableOpacity>
                 </View>
               </>
             )}
-
-   <Text style={[styles.questionText, { color: text }]}>Target Date</Text>
-<TouchableOpacity
-  onPress={() => setShowDatePicker(true)}
-  style={[styles.input, { justifyContent: "center", borderColor: subtext }]}
->
-  <Text style={{ color: date ? text : subtext }}>
-    {date
-      ? date.toLocaleDateString("en-US")
-      : "Select Date"
-    }
-  </Text>
-</TouchableOpacity>
-
-{showDatePicker && (
-  <DateTimePicker
-    value={date || new Date()}
-    mode="date"
-    display={Platform.OS === "android" ? "calendar" : "inline"}
-    // iOS: switch between light/dark calendar
-    themeVariant={darkMode ? "dark" : "light"}
-    // Android: ensure text is visible
-    textColor={text}
-    onChange={(event: DateTimePickerEvent, selectedDate?: Date) => {
-      setShowDatePicker(false);
-      if (selectedDate) setDate(selectedDate);
-    }}
-  />
-)}
-
-            <Text style={[styles.questionText, { color: text }]}>
-              Would you like to track your savings?
-            </Text>
-            <View style={styles.toggleRow}>
-              <TouchableOpacity
-                style={[styles.toggleBtn, track === true && styles.toggleBtnActive]}
-                onPress={() => setTrack(true)}
-              >
-                <Text style={[styles.toggleTxt, track === true && styles.toggleTxtActive]}>Yes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.toggleBtn, track === false && styles.toggleBtnActive]}
-                onPress={() => setTrack(false)}
-              >
-                <Text style={[styles.toggleTxt, track === false && styles.toggleTxtActive]}>No</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: primary }]}
-              onPress={calculateProjection}
-            >
+            <Text style={[styles.questionText,{color:text}]}>Target Date</Text>
+            <TouchableOpacity onPress={()=>setShowDatePicker(true)} style={[styles.input,{justifyContent:"center",borderColor:subtext}]}>             
+               <Text style={{color:date?text:subtext}}>{date?date.toLocaleDateString("en-US"):"Select Date"}</Text>
+            </TouchableOpacity>
+   {showDatePicker && <DateTimePicker
+                value={date||new Date()}
+                mode="date"
+                display={Platform.OS==="android"?"calendar":"inline"}
+                locale="en-US"
+                themeVariant={darkMode?"dark":"light"}
+                textColor={text}
+                onChange={(_,sd)=>{setShowDatePicker(false); if(sd) setDate(sd);}} />}
+              <TouchableOpacity style={[styles.button,{backgroundColor:primary}]} onPress={calculateProjection}>
               <Text style={styles.buttonText}>Calculate Projection</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Tracking Section */}
-          {track && goals.map((g, idx) => {
-            const progress = Math.min(g.saved / g.target, 1);
-            return (
-              <View
-                key={idx}
-                style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}
-              >
-                <Text style={[styles.goalName, { color: text }]}>{g.name}</Text>
-                <Text style={[styles.subheader, { color: subtext }]}>Time Left: {g.timeLeft}</Text>
-                <Text style={[styles.subheader, { color: subtext }]}>Monthly Needed: ﷼{g.monthlyNeeded.toLocaleString()}</Text>
+          {/* Inline Projection & Track Prompt */}
+          {projectionNeeded!==null && showTrackPrompt && (
+            <View style={[styles.card,{backgroundColor:cardBg,borderColor:border}]}>              
+              <Text style={[styles.subheader,{color:text}]}>To achieve your goal, save ﷼{projectionNeeded.toLocaleString()} a month</Text>
+              <Text style={[styles.questionText,{color:text}]}>Would you like to track your savings?</Text>
+              <View style={styles.toggleRow}>
+                <TouchableOpacity style={[styles.toggleBtn, track===true&&styles.toggleBtnActive]} onPress={()=>{setTrack(true); setShowTrackPrompt(false);}}>
+                  <Text style={[styles.toggleTxt, track===true&&styles.toggleTxtActive]}>Yes</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.toggleBtn, track === false && styles.toggleBtnActive]}
+                  onPress={() => { setTrack(false); setShowTrackPrompt(false); }}
+                >
+                  <Text style={[styles.toggleTxt, track === false && styles.toggleTxtActive]}>No</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
-                {/* target amount on right above bar */}
+          {/* Savings Tracker */}
+          {track && goals.map((g, i) => {
+            const pct = Math.min(g.saved / g.target, 1);
+            const badges = earnedBadges(g);
+            const isComplete = g.saved >= g.target;
+            return (
+              <View key={i} style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
+                <Text style={[styles.goalName, { color: text }]}>{g.name}</Text>
+                <View style={styles.badgeContainer}>
+                  {BADGES.map(b => (
+                    <MaterialCommunityIcons
+                      key={b.id}
+                      name="medal-outline"
+                      size={24}
+                      color={badges.includes(b.id) ? primary : subtext}
+                      style={{ marginRight: 12 }}
+                    />
+                  ))}
+                </View>
+                <Text style={[styles.subheader, { color: subtext }]}>Time Left: {g.timeLeft}</Text>
+                <Text style={[styles.subheader, { color: subtext }]}>
+                  Monthly Needed: ﷼{g.monthlyNeeded.toLocaleString()}
+                </Text>
                 <View style={styles.targetContainer}>
                   <Text style={[styles.targetAmount, { color: subtext }]}>
                     ﷼{g.target.toLocaleString()}
                   </Text>
                 </View>
-
                 <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${progress * 100}%`, backgroundColor: primary },
-                    ]}
-                  />
+                  <View style={[styles.progressFill, { width: `${pct*100}%`, backgroundColor: primary }]} />
                 </View>
 
-                <View style={styles.row}>
-                  <TextInput
-                    style={[styles.input, styles.amountInput, { color: text, borderColor: subtext }]}
-                    placeholder="Amount (﷼)"
-                    placeholderTextColor={subtext}
-                    keyboardType="numeric"
-                    value={amounts[idx] || ""}
-                    onChangeText={t => setAmounts(a => ({ ...a, [idx]: t }))}
-                  />
-                  <TouchableOpacity style={[styles.smallBtn, { backgroundColor: primary }]} onPress={() => addToGoal(idx)}>
-                    <Text style={styles.buttonText}>+ Add</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.smallBtn, { backgroundColor: "#dc2626" }]} onPress={() => withdrawFromGoal(idx)}>
-                    <Text style={styles.buttonText}>– Withdraw</Text>
-                  </TouchableOpacity>
-                </View>
+                {isComplete ? (
+                  <Text style={[styles.completedText, { color: text }]}>Completed</Text>
+                ) : (
+                  <View style={styles.row}>
+                    <TextInput
+                      style={[styles.input, styles.amountInput, { color: text, borderColor: subtext }]}
+                      placeholder="Amount (﷼)"
+                      placeholderTextColor={subtext}
+                      keyboardType="numeric"
+                      value={amounts[i]||""}
+                      onChangeText={t => setAmounts(a => ({ ...a, [i]: t }))}
+                    />
+                    <TouchableOpacity style={[styles.smallBtn, { backgroundColor: primary }]} onPress={() => addToGoal(i)}>
+                      <Text style={styles.buttonText}>+ Add</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.smallBtn, { backgroundColor: "#dc2626" }]} onPress={() => withdrawFromGoal(i)}>
+                      <Text style={styles.buttonText}>– Withdraw</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             );
           })}
@@ -319,37 +317,31 @@ export default function Savings() {
           {/* Transaction Log */}
           {track && (
             <>
-              <Text style={[styles.sectionTitle, { color: text }]}>Tracker</Text>
+              <Text style={[styles.sectionTitle, { color: text }]}>Transaction Log</Text>
               <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
                 {transactions.length === 0 ? (
-                  <Text style={[styles.noTrans, { color: subtext }]}>No additions or withdrawals yet.</Text>
+                  <Text style={[styles.noTrans, { color: subtext }]}>No transactions yet.</Text>
                 ) : (
-        <FlatList
-  data={transactions}
-  keyExtractor={(_, i) => i.toString()}
-  nestedScrollEnabled
-  style={{ flexGrow: 0 }}
-  renderItem={({ item }) => (
-    <View style={styles.txRow}>
-      {/* Use green for additions, red for withdrawals */}
-      <Text
-        style={[
-          styles.txText,
-          {
-            color: item.type === "Add" ? "#22c55e" /* green-500 */ : "#ef4444" /* red-500 */,
-          },
-        ]}
-      >
-        {item.type} ﷼{item.amount} {item.type === "Add" ? "to" : "from"} {item.goal}
-      </Text>
-      <Text style={[styles.txDate, { color: subtext }]}>
-        {item.date.toLocaleDateString("en-US")}
-      </Text>
-    </View>
-  )}
-/>
-
-     )}
+                  <FlatList
+                    data={transactions}
+                    keyExtractor={(_, idx) => idx.toString()}
+                    nestedScrollEnabled
+                    style={{ flexGrow: 0 }}
+                    renderItem={({ item }) => (
+                      <View style={styles.txRow}>
+                        <Text style={[
+                          styles.txText,
+                          { color: item.type === "Add" ? "#22c55e" : "#ef4444" }
+                        ]}>
+                          {item.type} ﷼{item.amount} {item.type === "Add" ? "to" : "from"} {item.goal}
+                        </Text>
+                        <Text style={[styles.txDate, { color: subtext }]}>
+                          {item.date.toLocaleDateString("en-US")}
+                        </Text>
+                      </View>
+                    )}
+                  />
+                )}
               </View>
             </>
           )}
@@ -361,61 +353,63 @@ export default function Savings() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  flex: { flex: 1 },
-  container: { padding: 16, paddingBottom: 32 },
+  safeArea:      { flex: 1 },
+  flex:          { flex: 1 },
+  container:     { padding: 16, paddingBottom: 32 },
 
-  sectionTitle: { fontSize: 20, fontWeight: "600", marginBottom: 12 },
+  sectionTitle:  { fontSize: 20, fontWeight: "600", marginBottom: 12 },
 
-  card: { borderRadius: 12, padding: 16, marginBottom: 24, borderWidth: 1 },
-  input: {
+  card:          { borderRadius: 12, padding: 16, marginBottom: 24, borderWidth: 1 },
+  input:         {
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 12,
-    fontSize: 16,
+    fontSize: 16
   },
-  questionText: { fontSize: 16, fontWeight: "600", marginBottom: 8 },
+  questionText:  { fontSize: 16, fontWeight: "600", marginBottom: 8 },
 
-  toggleRow: {
+  toggleRow:     {
     flexDirection: "row",
     borderRadius: 8,
     backgroundColor: "#f3f4f6",
     overflow: "hidden",
     marginBottom: 12,
   },
-  toggleBtn: { flex: 1, padding: 12, alignItems: "center" },
+  toggleBtn:       { flex: 1, padding: 12, alignItems: "center" },
   toggleBtnActive: { backgroundColor: "#8b5cf6" },
-  toggleTxt: { fontSize: 14, fontWeight: "600", color: "#6b7280" },
+  toggleTxt:       { fontSize: 14, fontWeight: "600", color: "#6b7280" },
   toggleTxtActive: { color: "#fff" },
 
-  button: { paddingVertical: 14, borderRadius: 8, alignItems: "center", marginTop: 8 },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  button:        { paddingVertical: 14, borderRadius: 8, alignItems: "center", marginTop: 8 },
+  buttonText:    { color: "#fff", fontSize: 16, fontWeight: "600" },
 
-  header: { fontSize: 24, fontWeight: "700", marginBottom: 8 },
-  subheader: { fontSize: 16, marginBottom: 4 },
+  row:           { flexDirection: "row", alignItems: "center", marginTop: 12 },
+  amountInput:   { flex: 0.4, marginRight: 8 },
+  smallBtn:      { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginLeft: 8 },
 
-  row: { flexDirection: "row", alignItems: "center", marginTop: 12 },
-  amountInput: { flex: 0.4, marginRight: 8 },
-  smallBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginLeft: 8 },
+  goalName:      { fontSize: 18, fontWeight: "600", marginBottom: 4 },
+  subheader:     { fontSize: 16, marginBottom: 4 },
 
-  goalName: { fontSize: 18, fontWeight: "600", marginBottom: 4 },
+  targetContainer:{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 },
+  targetAmount:   { fontSize: 16, fontWeight: "600" },
 
-  targetContainer: { flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 },
-  targetAmount: { fontSize: 16, fontWeight: "600" },
-
-  progressBar: {
+  progressBar:   {
     height: 8,
     borderRadius: 4,
     overflow: "hidden",
     backgroundColor: "#e5e7eb",
     marginBottom: 12,
   },
-  progressFill: { height: "100%" },
+  progressFill:  { height: "100%" },
 
-  noTrans: { fontSize: 16, fontStyle: "italic" },
-  txRow: { marginBottom: 8 },
-  txText: { fontSize: 14 },
-  txDate: { fontSize: 12 },
+  completedText: { fontSize: 16, fontWeight: "600", textAlign: "center", marginTop: 12 },
+
+  noTrans:       { fontSize: 16, fontStyle: "italic" },
+  txRow:         { marginBottom: 8 },
+  txText:        { fontSize: 14 },
+  txDate:        { fontSize: 12 },
+
+  badgeContainer:{ flexDirection: "row", marginBottom: 8 },
 });

@@ -36,9 +36,21 @@ export default function TabLayout() {
         name="advisor"
         options={{
           title: "Advisor",
-          // ← here’s your AI icon
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="robot-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="khazna"
+        options={{
+          title: "Khazna",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="account-group-outline"
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
