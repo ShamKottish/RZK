@@ -40,7 +40,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(
         email=user.email,
         password_hash=hash_password(user.password),
-        phone_number=user.phone_number
+        phone_number=user.phone_number,
+        birthday=user.birthday,
     )
     db.add(db_user)
     db.commit()

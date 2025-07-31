@@ -24,7 +24,7 @@ const TOP_BAR_HEIGHT = 56;
 
 // Add this near the top of your file (after imports)
 
-const BASE_URL = "https://e671de40ef7c.ngrok-free.app "; // Replace with your local IP and backend port
+const BASE_URL = "https://e671de40ef7c.ngrok-free.app"; // Replace with your local IP and backend port
 
 const registerUser = async (payload: {
   email: string;

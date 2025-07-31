@@ -1,12 +1,14 @@
+from datetime import date
+
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
 
 class UserCreate(BaseModel):
-
     email: EmailStr
     password: str
     phone_number: str
+    birthday: date
 
 class UserResponse(BaseModel):
     id: int

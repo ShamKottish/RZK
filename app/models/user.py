@@ -16,6 +16,7 @@ class User(Base):
     savings_goal = Column(Float)
     current_savings = Column(Float)
     savings = Column(Float, nullable=False)
+    birthday = Column(Date, nullable=False)
 
     savings_goals = relationship("SavingsGoal", back_populates="user")
     transactions = relationship("Transaction", back_populates="user")
