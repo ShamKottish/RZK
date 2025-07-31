@@ -169,18 +169,27 @@ export default function Dashboard() {
   >([]);
   const [earnedBadges, setEarnedBadges] = useState<BadgeDef[]>([]);
 
-  useEffect(() => {
-    AsyncStorage.getItem("userName").then((n) => n && setUserName(n));
-    AsyncStorage.getItem("userEmail").then((e) => e && setUserEmail(e));
+useEffect(() => {
+  AsyncStorage.getItem("userName").then((n) => n && setUserName(n));
+  AsyncStorage.getItem("userEmail").then((e) => e && setUserEmail(e));
 
-    const mock = [
-      { name: "Car Fund", saved: 12000, target: 20000, deadline: "2025-12-31" },
-      { name: "Vacation", saved: 5000, target: 5000, deadline: "2025-08-15" },
-    ];
-    setActiveGoals(mock);
-    setTotalSavings(mock.reduce((sum, g) => sum + g.saved, 0));
-    setGoalsCount(mock.length);
-    setGoalsCompleted(mock.filter((g) => g.saved >= g.target).length);
+  fetch("http://192.168.7.242:8000/savings/goals")  // use your actual IP here
+    .then(res => res.json())
+    .then(goals => {
+      setActiveGoals(goals);
+      setTotalSavings(goals.reduce((sum, g) => sum + g.current_amount, 0));
+      setGoalsCount(goals.length);
+      setGoalsCompleted(goals.filter((g) => g.current_amount >= g.target_amount).length);
+
+      const eb = BADGE_DEFS.filter((b) =>
+        goals.some((g) => g.current_amount / g.target_amount >= b.threshold)
+      );
+      setEarnedBadges(eb);
+    })
+    .catch(err => {
+      console.error("Fetch error:", err);
+    });
+}, []);
 
     const eb = BADGE_DEFS.filter((b) =>
       mock.some((g) => g.saved / g.target >= b.threshold)

@@ -19,3 +19,14 @@ class SavingsGoalRead(SavingsGoalCreate):
 
     class Config:
         orm_mode = True
+
+
+class SavingsGoalOut(BaseModel):
+    id: int
+    goal_name: str
+    target_amount: float
+    target_date: date
+    current_amount: float
+
+    class Config:
+        orm_mode = True

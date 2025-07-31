@@ -1,22 +1,25 @@
 # this is where the FastAPI (exposes py logic to frontend) initializes.
 
+from dotenv import load_dotenv
+load_dotenv()
 from fastapi import FastAPI
 from app.routes import user, finance, ai_chat, savings, transaction, stocks, dashboard, watchlist
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:8082",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+#origins = [
+ #   "http://localhost:8082",
+#]
+
 
 
 # Include your route modules
