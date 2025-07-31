@@ -1,6 +1,7 @@
 # contains route handlers for user related stuff (create user, login, etc.).
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.db.database import SessionLocal
 from app.models.user import User
@@ -8,7 +9,6 @@ from app.schemas.user import UserResponse, UserCreate, UserLogin
 from app.services.auth import hash_password, verify_password, create_access_token
 from app.services.auth import get_current_user
 from app.db.database import get_db
-
 
 '''def create_user(user: UserCreate, db: Session):
     db_user = User(
@@ -25,7 +25,6 @@ from app.db.database import get_db
 '''
 
 router = APIRouter()
-
 
 
 # Get all users
@@ -66,15 +65,17 @@ def update_savings(user_id: int, amount: int, db: Session = Depends(get_db)):
 
 
 @router.post("/user/login")
-async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user_credentials.email).first()
-    if not db_user:
+async def login(
+        form_data: OAuth2PasswordRequestForm = Depends(),
+        db: Session = Depends(get_db)
+):
+    # Find user by email (username in form_data)
+    db_user = db.query(User).filter(User.email == form_data.username).first()
+
+    if not db_user or not verify_password(form_data.password, db_user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    if not verify_password(user_credentials.password, db_user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    # generate token (e.g., JWT) here
+    # Generate JWT token
     token = create_access_token({"user_id": db_user.id})
 
     return {"access_token": token, "token_type": "bearer"}

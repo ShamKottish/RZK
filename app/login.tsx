@@ -11,11 +11,12 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableWithoutFeedback,
-  View
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../contexts/ThemeContext";
@@ -27,13 +28,13 @@ export default function LoginScreen() {
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
 
   const bg = darkMode ? "#111827" : "#f5f5f5";
   const text = darkMode ? "#f9fafb" : "#111827";
@@ -59,19 +60,12 @@ export default function LoginScreen() {
     loadSavedCredentials();
   }, []);
 
-  const handleSubmit = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      alert(activeTab === "signup" ? "Account created!" : "Login successful!");
-    }, 1500);
-  };
-
   const handleLogin = async () => {
     if (!identifier || !password) {
       setError("Please fill in both fields.");
       return;
     }
+
     setError("");
     setLoading(true);
     setTimeout(async () => {
@@ -94,6 +88,35 @@ export default function LoginScreen() {
     }, 1000);
   };
 
+  const handleSignup = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("http://192.168.3.53:8000/user/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Signup failed.");
+      }
+
+      await AsyncStorage.setItem("token", data.access_token);
+      router.replace("/dashboard");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const authenticateBiometric = async () => {
     try {
       const result = await LocalAuthentication.authenticateAsync({
@@ -113,7 +136,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg, paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0 }]}> 
       <View style={[styles.supportButton, { top: insets.top || 16 }]}> 
         <Pressable onPress={() => router.push("/support")}> 
           <Ionicons name="headset-outline" size={24} color={text} />
@@ -125,7 +148,6 @@ export default function LoginScreen() {
           <View style={styles.card}>
             <Text style={styles.title}>Welcome to RZK</Text>
 
-            {/* Tabs */}
             <View style={styles.tabContainer}>
               <Pressable onPress={() => setActiveTab("login")} style={[styles.tab, activeTab === "login" && styles.activeTab]}>
                 <Text style={[styles.tabText, activeTab === "login" && styles.activeTabText]}>Login</Text>
@@ -157,76 +179,52 @@ export default function LoginScreen() {
               </>
             )}
 
+            <Text style={styles.label}>Email or Phone</Text>
+            <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder }]}> 
+              <Ionicons name={/^[0-9]+$/.test(identifier) ? "call-outline" : "mail-outline"} size={20} color={placeholder} />
+              <TextInput
+                style={[styles.input, { color: text }]}
+                placeholder="Email or Phone"
+                placeholderTextColor={placeholder}
+                keyboardType="default"
+                autoCapitalize="none"
+                value={identifier}
+                onChangeText={setIdentifier}
+              />
+            </View>
+
+            <Text style={styles.label}>Password</Text>
+            <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder, justifyContent: "space-between" }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={placeholder} />
+              <TextInput
+                style={[styles.input, { color: text, flex: 1, marginLeft: 12, marginRight: 8 }]}
+                placeholder="Password"
+                placeholderTextColor={placeholder}
+                secureTextEntry={!showPwd}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <Pressable onPress={() => setShowPwd((v) => !v)}>
+                <Ionicons name={showPwd ? "eye-off" : "eye"} size={20} color={placeholder} />
+              </Pressable>
+            </View>
+
             {activeTab === "login" && (
               <>
-                <Text style={styles.label}>Email or Phone</Text>
-                <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder }]}> 
-                  <Ionicons name={/^[0-9]+$/.test(identifier) ? "call-outline" : "mail-outline"} size={20} color={placeholder} />
-                  <TextInput
-                    style={[styles.input, { color: text }]}
-                    placeholder="Email or Phone"
-                    placeholderTextColor={placeholder}
-                    keyboardType="default"
-                    autoCapitalize="none"
-                    value={identifier}
-                    onChangeText={setIdentifier}
-                  />
-                </View>
-
-             <Text style={styles.label}>Password</Text>
-<View
-  style={[
-    styles.inputGroup,
-    {
-      backgroundColor: cardBg,
-      borderColor: placeholder,
-      justifyContent: "space-between", // space between input and eye
-    },
-  ]}
->
-  <Ionicons name="lock-closed-outline" size={20} color={placeholder} />
-  
-  <TextInput
-    style={[
-      styles.input,
-      {
-        color: text,
-        flex: 1,            // take remaining space
-        marginLeft: 12,
-        marginRight: 8,     // space before eye
-      },
-    ]}
-    placeholder="Password"
-    placeholderTextColor={placeholder}
-    secureTextEntry={!showPwd}
-    value={password}
-    onChangeText={setPassword}
-  />
-  
-  <Pressable onPress={() => setShowPwd((v) => !v)}>
-    <Ionicons name={showPwd ? "eye-off" : "eye"} size={20} color={placeholder} />
-  </Pressable>
-</View>
-
-                {/* Remember Me */}
-                <Pressable
-                  onPress={() => setRememberMe(!rememberMe)}
-                  style={{ flexDirection: "row", alignItems: "center", marginBottom: 16, alignSelf: "flex-start" }}
-                >
+                <Pressable onPress={() => setRememberMe(!rememberMe)} style={{ flexDirection: "row", alignItems: "center", marginBottom: 16, alignSelf: "flex-start" }}>
                   <View style={{ height: 20, width: 20, borderRadius: 4, borderWidth: 1, borderColor: placeholder, backgroundColor: rememberMe ? "#8b5cf6" : "transparent", justifyContent: "center", alignItems: "center", marginRight: 8 }}>
                     {rememberMe && <Ionicons name="checkmark" size={14} color="#fff" />}
                   </View>
-                  <Text style={{ color: '#ffff', fontSize: 14 }}>Remember Me</Text>
+                  <Text style={{ color: text, fontSize: 14 }}>Remember Me</Text>
                 </Pressable>
-
-                    <Pressable onPress={() => router.push("/forgot-password")}>
-                  <Text style={[styles.forgotText, { color: "#ffffffff" }]}>Forgot Password?</Text>
+                <Pressable onPress={() => router.push("/forgot-password")}>
+                  <Text style={[styles.forgotText, { color: text }]}>Forgot Password?</Text>
                 </Pressable>
               </>
             )}
 
             <Pressable
-              onPress={activeTab === "signup" ? handleSubmit : handleLogin}
+              onPress={activeTab === "signup" ? handleSignup : handleLogin}
               disabled={loading || (activeTab === "login" && (!identifier || !password))}
               style={[styles.button, loading && { opacity: 0.6 }]}
             >
@@ -245,11 +243,7 @@ export default function LoginScreen() {
               </Pressable>
             )}
 
-            {activeTab === "login" && (
-              <Text style={[styles.demoHint, { color: bg }]}>Demo: demo@rzk.com or 0551234567 / password123</Text>
-            )}
-
-            {!!error && <Text style={styles.error}>{error}</Text>}
+            <Text style={[styles.demoHint, { color: placeholder }]}>Demo: demo@rzk.com or 0551234567 / password123</Text>
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -260,7 +254,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   container: {
     flex: 1,
@@ -283,6 +276,22 @@ const styles = StyleSheet.create({
     color: "#fff",
     textAlign: "center",
     marginBottom: 20,
+  },
+  inputGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+    height: 48,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  input: {
+    flex: 1,
+    height: 50,
+    marginLeft: 12,
+    color: "#fff",
   },
   tabContainer: {
     flexDirection: "row",
@@ -314,53 +323,24 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     marginTop: 10,
   },
-  input: {
-    color: "#fff",
-    paddingHorizontal: 14,
-    paddingVertical: 30,
-  },
-  inputGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    marginBottom: 12,
-    height: 48,
-    borderWidth: 1,
-  },
-  button: {
-    backgroundColor: "#9333ea",
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginTop: 20,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
   forgotText: {
     marginTop: 8,
     fontSize: 14,
     textDecorationLine: "underline",
-  },
-  promptText: {
-    color: "#e0e7ff",
-  },
-  linkText: {
     color: "#fff",
-    fontWeight: "600",
   },
-  demoHint: {
-    marginTop: 16,
-    fontStyle: "italic",
-    fontSize: 12,
+  button: {
+    height: 50,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
+    backgroundColor: "#8b5cf6",
   },
-  error: {
-    color: "#fecaca",
-    marginTop: 12,
-    textAlign: "center",
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
   },
   supportButton: {
     position: "absolute",
@@ -368,9 +348,15 @@ const styles = StyleSheet.create({
     left: 16,
     zIndex: 10,
   },
-  signupPrompt: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginVertical: 12,
+  demoHint: {
+    marginTop: 16,
+    fontStyle: "italic",
+    fontSize: 12,
+    color: "#d1d5db",
+  },
+  error: {
+    color: "#fecaca",
+    marginTop: 12,
+    textAlign: "center",
   },
 });
