@@ -47,7 +47,7 @@ export default function LoginScreen() {
     setLoading(true);
 
 try {
-  const response = await fetch("http://192.168.3.53:8000/user/login", {
+  const response = await fetch("https://e671de40ef7c.ngrok-free.app /user/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

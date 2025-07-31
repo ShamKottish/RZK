@@ -38,12 +38,9 @@ def get_users(db: Session = Depends(get_db)):
 @router.post("/users")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(
-        name=user.name,
         email=user.email,
         password_hash=hash_password(user.password),
-        savings=user.savings,
-        savings_goal=user.savings_goal,  # or some default value
-        current_savings=user.current_savings  # or some default value
+        phone_number=user.phone_number
     )
     db.add(db_user)
     db.commit()

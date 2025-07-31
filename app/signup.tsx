@@ -22,6 +22,34 @@ import { useTheme } from "../contexts/ThemeContext";
 
 const TOP_BAR_HEIGHT = 56;
 
+// Add this near the top of your file (after imports)
+
+const BASE_URL = "https://e671de40ef7c.ngrok-free.app "; // Replace with your local IP and backend port
+
+const registerUser = async (payload: {
+  email: string;
+  password: string;
+  phone: string;
+}) => {
+  const response = await fetch(`${BASE_URL}/user/users`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.detail || "Registration failed");
+  }
+
+  return response.json(); // Adjust based on your backend's response
+};
+
+
+
+
 export default function SignUpScreen() {
   const router = useRouter();
   const { darkMode } = useTheme();
@@ -59,11 +87,35 @@ export default function SignUpScreen() {
     }
     setError("");
     setLoading(true);
-    setTimeout(async () => {
-      setLoading(false);
-      await AsyncStorage.setItem("token", "demo-token-123");
-      router.replace("/dashboard");
-    }, 1000);
+setLoading(true);
+try {
+  const birthdayString = birthday?.toISOString().split("T")[0] || "";
+
+  const res = await registerUser({
+    email,
+    password,
+    phone,
+    birthday: birthdayString,
+  });
+
+  // Assume backend returns a token on success
+  await AsyncStorage.setItem("token", res.token);
+  router.replace("/dashboard");
+
+} catch (err) {
+  console.error("SignUp error:", JSON.stringify(err));
+
+  if (err instanceof Error) {
+    setError(err.message);
+  } else if (typeof err === "object" && err !== null) {
+    setError(JSON.stringify(err));
+  } else {
+    setError("Something went wrong.");
+  }
+
+} finally {
+  setLoading(false);
+    }
   };
 
   return (
