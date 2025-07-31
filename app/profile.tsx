@@ -57,14 +57,14 @@ export default function Profile() {
         {/* Header with Back & Edit Buttons */}
         <View style={[styles.header, { borderColor: border }]}>
           <View style={styles.headerLeft}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <Ionicons name="arrow-back-outline" size={24} color={text} />
+            <TouchableOpacity onPress={() => router.replace("/dashboard")} style={styles.backBtn}>
+              <Ionicons name="arrow-back-outline" size={24} color={"#8b5cf6"} />
             </TouchableOpacity>
-            <Ionicons name="person-circle-outline" size={48} color={subtext} />
-            <Text style={[styles.title, { color: text }]}>Profile</Text>
+            <Ionicons name="person-circle-outline" size={48} color={"#8b5cf6"} />
+            <Text style={[styles.title,  { color: "#8b5cf6" }]}>Profile</Text>
           </View>
           <TouchableOpacity onPress={() => router.push("/editProfile")} style={styles.editIconBtn}>
-            <Ionicons name="pencil-outline" size={24} color={text} />
+            <Ionicons name="pencil-outline" size={24} color={"#8b5cf6"} />
           </TouchableOpacity>
         </View>
 
@@ -99,7 +99,7 @@ export default function Profile() {
           style={[styles.editBtn, { backgroundColor: cardBg, borderColor: border }]}
           onPress={() => router.push("/editProfile")}
         >
-          <Text style={[styles.editText, { color: "#2563eb" }]}>Edit Profile</Text>
+          <Text style={[styles.editText, { color: "#8b5cf6" }]}>Edit Profile</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -132,8 +132,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     marginLeft: 12,
+   color: "#8b5cf6", 
   },
-
   card: {
     borderRadius: 12,
     padding: 16,

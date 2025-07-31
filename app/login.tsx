@@ -1,10 +1,11 @@
-// app/login.tsx
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as LocalAuthentication from "expo-local-authentication";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -23,19 +24,41 @@ import { useTheme } from "../contexts/ThemeContext";
 export default function LoginScreen() {
   const router = useRouter();
   const { darkMode } = useTheme();
-
-  // Combined identifier (email or phone) + password
+  const insets = useSafeAreaInsets();
+  const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const insets = useSafeAreaInsets(); 
 
   const bg = darkMode ? "#111827" : "#f5f5f5";
   const text = darkMode ? "#f9fafb" : "#111827";
   const cardBg = darkMode ? "#1f2937" : "#fff";
   const placeholder = darkMode ? "#d1d5db" : "#6b7280";
+
+  useEffect(() => {
+    const checkBiometrics = async () => {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      setBiometricAvailable(compatible && enrolled);
+    };
+    const loadSavedCredentials = async () => {
+      const savedIdentifier = await AsyncStorage.getItem("savedIdentifier");
+      const savedPassword = await AsyncStorage.getItem("savedPassword");
+      if (savedIdentifier && savedPassword) {
+        setIdentifier(savedIdentifier);
+        setPassword(savedPassword);
+        setRememberMe(true);
+      }
+    };
+    checkBiometrics();
+    loadSavedCredentials();
+  }, []);
 
   const handleLogin = async () => {
     if (!identifier || !password) {
@@ -45,106 +68,136 @@ export default function LoginScreen() {
 
     setError("");
     setLoading(true);
+    setTimeout(async () => {
+      setLoading(false);
+      const validEmail = "demo@rzk.com";
+      const validPhone = "0551234567";
+      if ((identifier === validEmail || identifier === validPhone) && password === "password123") {
+        await AsyncStorage.setItem("token", "demo-token-123");
+        if (rememberMe) {
+          await AsyncStorage.setItem("savedIdentifier", identifier);
+          await AsyncStorage.setItem("savedPassword", password);
+        } else {
+          await AsyncStorage.removeItem("savedIdentifier");
+          await AsyncStorage.removeItem("savedPassword");
+        }
+        router.replace("/dashboard");
+      } else {
+        setError("Invalid credentials.");
+      }
+    }, 1000);
+  };
 
-try {
-  const response = await fetch("http://192.168.7.242:8000/user/login", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: identifier,
-      password: password,
-    }),
-  });
+  const handleSignup = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("http://192.168.3.53:8000/user/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
 
-  const data = await response.json();
+      const data = await response.json();
 
-  if (!response.ok) {
-    throw new Error(data.detail || "Login failed.");
-  }
+      if (!response.ok) {
+        throw new Error(data.detail || "Signup failed.");
+      }
 
-  await AsyncStorage.setItem("token", data.access_token);
-  router.replace("/dashboard");
-} catch (err: any) {
-  setError(err.message);
-} finally {
-  setLoading(false);
-}
+      await AsyncStorage.setItem("token", data.access_token);
+      router.replace("/dashboard");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const authenticateBiometric = async () => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: "Login with Face ID / Fingerprint",
+        fallbackLabel: "Enter password",
+      });
+      if (result.success) {
+        await AsyncStorage.setItem("token", "demo-token-123");
+        router.replace("/dashboard");
+      } else {
+        Alert.alert("Authentication failed");
+      }
+    } catch (e) {
+      const err = e as Error;
+      Alert.alert("Biometric error", err.message);
+    }
   };
 
   return (
-<SafeAreaView
-  style={[
-    styles.safe,
-    {
-      backgroundColor: bg,
-      paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-    },
-  ]}
->
-      {/* Customer Service Button */}
-      <View style={[styles.supportButton, { top: insets.top || 16 }]}>
-        <Pressable onPress={() => router.push("/support")}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg, paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0 }]}> 
+      <View style={[styles.supportButton, { top: insets.top || 16 }]}> 
+        <Pressable onPress={() => router.push("/support")}> 
           <Ionicons name="headset-outline" size={24} color={text} />
         </Pressable>
       </View>
-        <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.select({ ios: "padding", android: undefined })}
-      >
+
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.inner}>
-            {/* Brand */}
-            <Text style={[styles.brandTitle, { color: text }]}>
-              <Text style={{ color: "#8b5cf6" }}>RZK</Text>
-            </Text>
+          <View style={styles.card}>
+            <Text style={styles.title}>Welcome to RZK</Text>
 
-            <Text style={[styles.title, { color: text }]}>Welcome Back!</Text>
-            {!!error && <Text style={styles.error}>{error}</Text>}
+            <View style={styles.tabContainer}>
+              <Pressable onPress={() => setActiveTab("login")} style={[styles.tab, activeTab === "login" && styles.activeTab]}>
+                <Text style={[styles.tabText, activeTab === "login" && styles.activeTabText]}>Login</Text>
+              </Pressable>
+              <Pressable onPress={() => setActiveTab("signup")} style={[styles.tab, activeTab === "signup" && styles.activeTab]}>
+                <Text style={[styles.tabText, activeTab === "signup" && styles.activeTabText]}>Sign Up</Text>
+              </Pressable>
+            </View>
 
-            {/* Identifier (email or phone) */}
-            <View
-              style={[
-                styles.inputGroup,
-                { backgroundColor: cardBg, borderColor: placeholder },
-              ]}
-            >
-              <Ionicons
-                name={
-                  /^[0-9]+$/.test(identifier)
-                    ? "call-outline"
-                    : "mail-outline"
-                }
-                size={20}
-                color={placeholder}
-              />
+            {activeTab === "signup" && (
+              <>
+                <Text style={styles.label}>Username</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your username"
+                  placeholderTextColor="#eee"
+                  value={username}
+                  onChangeText={setUsername}
+                />
+                <Text style={styles.label}>Email Address</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  placeholderTextColor="#eee"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                />
+              </>
+            )}
+
+            <Text style={styles.label}>Email or Phone</Text>
+            <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder }]}> 
+              <Ionicons name={/^[0-9]+$/.test(identifier) ? "call-outline" : "mail-outline"} size={20} color={placeholder} />
               <TextInput
                 style={[styles.input, { color: text }]}
                 placeholder="Email or Phone"
                 placeholderTextColor={placeholder}
-                keyboardType="default"      
+                keyboardType="default"
                 autoCapitalize="none"
                 value={identifier}
                 onChangeText={setIdentifier}
               />
             </View>
 
-            {/* Password */}
-            <View
-              style={[
-                styles.inputGroup,
-                { backgroundColor: cardBg, borderColor: placeholder },
-              ]}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={placeholder}
-              />
+            <Text style={styles.label}>Password</Text>
+            <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder, justifyContent: "space-between" }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={placeholder} />
               <TextInput
-                style={[styles.input, { color: text }]}
+                style={[styles.input, { color: text, flex: 1, marginLeft: 12, marginRight: 8 }]}
                 placeholder="Password"
                 placeholderTextColor={placeholder}
                 secureTextEntry={!showPwd}
@@ -152,54 +205,45 @@ try {
                 onChangeText={setPassword}
               />
               <Pressable onPress={() => setShowPwd((v) => !v)}>
-                <Ionicons
-                  name={showPwd ? "eye-off" : "eye"}
-                  size={20}
-                  color={placeholder}
-                />
+                <Ionicons name={showPwd ? "eye-off" : "eye"} size={20} color={placeholder} />
               </Pressable>
             </View>
 
-            {/* Sign Up Prompt */}
-            <View style={styles.signupPrompt}>
-              <Text style={[styles.promptText, { color: text }]}>
-                Don't have an account?{" "}
-              </Text>
-              <Pressable onPress={() => router.push("/signup")}>
-                <Text style={[styles.linkText, { color: "#8b5cf6" }]}>
-                  Sign Up
-                </Text>
-              </Pressable>
-            </View>
+            {activeTab === "login" && (
+              <>
+                <Pressable onPress={() => setRememberMe(!rememberMe)} style={{ flexDirection: "row", alignItems: "center", marginBottom: 16, alignSelf: "flex-start" }}>
+                  <View style={{ height: 20, width: 20, borderRadius: 4, borderWidth: 1, borderColor: placeholder, backgroundColor: rememberMe ? "#8b5cf6" : "transparent", justifyContent: "center", alignItems: "center", marginRight: 8 }}>
+                    {rememberMe && <Ionicons name="checkmark" size={14} color="#fff" />}
+                  </View>
+                  <Text style={{ color: text, fontSize: 14 }}>Remember Me</Text>
+                </Pressable>
+                <Pressable onPress={() => router.push("/forgot-password")}>
+                  <Text style={[styles.forgotText, { color: text }]}>Forgot Password?</Text>
+                </Pressable>
+              </>
+            )}
 
-            {/* Forgot Password */}
-            <Pressable onPress={() => router.push("/forgot-password")}>
-              <Text style={[styles.forgotText, { color: "#8b5cf6" }]}>
-                Forgot Password?
-              </Text>
-            </Pressable>
-
-            {/* Login Button */}
             <Pressable
-              style={[
-                styles.button,
-                { backgroundColor: "#8b5cf6" },
-                (!identifier || !password || loading) &&
-                  styles.buttonDisabled,
-              ]}
-              onPress={handleLogin}
-              disabled={!identifier || !password || loading}
+              onPress={activeTab === "signup" ? handleSignup : handleLogin}
+              disabled={loading || (activeTab === "login" && (!identifier || !password))}
+              style={[styles.button, loading && { opacity: 0.6 }]}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Log In</Text>
+                <Text style={styles.buttonText}>
+                  {activeTab === "signup" ? "Create Account" : "Sign In"}
+                </Text>
               )}
             </Pressable>
 
-            <Text style={[styles.demoHint, { color: placeholder }]}>
-              Demo: demo@rzk.com or 0551234567 / password123
-            </Text>
+            {biometricAvailable && activeTab === "login" && (
+              <Pressable style={styles.button} onPress={authenticateBiometric}>
+                <Text style={styles.buttonText}>Activate Quick Log In</Text>
+              </Pressable>
+            )}
+
+            <Text style={[styles.demoHint, { color: placeholder }]}>Demo: demo@rzk.com or 0551234567 / password123</Text>
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -208,39 +252,38 @@ try {
 }
 
 const styles = StyleSheet.create({
-  safe: {
+  safeArea: {
     flex: 1,
-    backgroundColor: "#6b21a8",
   },
   container: {
     flex: 1,
-  },
-  inner: {
-    flex: 1,
-    alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
-  brandTitle: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 24,
+  card: {
+    backgroundColor: "#6d28d9",
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 6,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "bold",
     color: "#fff",
-    marginBottom: 24,
+    textAlign: "center",
+    marginBottom: 20,
   },
   inputGroup: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(109,40,217,0.6)",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    width: "100%",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+    height: 48,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.3)",
   },
@@ -250,19 +293,35 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     color: "#fff",
   },
-  signupPrompt: {
+  tabContainer: {
     flexDirection: "row",
-    justifyContent: "center",
-    marginVertical: 12,
+    justifyContent: "space-around",
+    backgroundColor: "#a78bfa",
+    borderRadius: 999,
+    marginBottom: 20,
+    padding: 4,
   },
-  promptText: {
-    fontSize: 14,
-    color: "#e5e7eb",
+  tab: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 999,
+    alignItems: "center",
   },
-  linkText: {
-    fontSize: 14,
-    fontWeight: "600",
+  activeTab: {
+    backgroundColor: "#fff",
+  },
+  tabText: {
     color: "#fff",
+    fontWeight: "600",
+  },
+  activeTabText: {
+    color: "#6d28d9",
+  },
+  label: {
+    color: "#ffffffff",
+    fontSize: 14,
+    marginBottom: 6,
+    marginTop: 10,
   },
   forgotText: {
     marginTop: 8,
@@ -275,23 +334,29 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 8,
-    width: "100%",
-    backgroundColor: "#fff",
+    marginTop: 20,
+    backgroundColor: "#8b5cf6",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
   },
   supportButton: {
-  position: "absolute",
-  top: 16,
-  left: 16,
-  zIndex: 10,
-},
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#6b21a8", fontSize: 16, fontWeight: "700" },
+    position: "absolute",
+    top: 16,
+    left: 16,
+    zIndex: 10,
+  },
   demoHint: {
     marginTop: 16,
     fontStyle: "italic",
     fontSize: 12,
     color: "#d1d5db",
   },
-  error: { color: "#fecaca", marginBottom: 12, textAlign: "center" },
+  error: {
+    color: "#fecaca",
+    marginTop: 12,
+    textAlign: "center",
+  },
 });

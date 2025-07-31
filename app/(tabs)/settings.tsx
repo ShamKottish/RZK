@@ -112,15 +112,16 @@ export default function Settings() {
             />
           </View>
 
-          <TouchableOpacity
-            style={[styles.row, { borderColor: border }]}
-            onPress={() => setLanguage(language === "en" ? "ar" : "en")}
-          >
-            <Text style={[styles.optionLabel, { color: text }]}>
-              Language: {language === "en" ? "English" : "العربية"}
-            </Text>
-            <Ionicons name="language-outline" size={20} color={subtext} />
-          </TouchableOpacity>
+<TouchableOpacity
+  style={[styles.row, { borderColor: border }]}
+  onPress={() => setLanguage(language === "en" ? "ar" : "en")}
+>
+  <Text style={[styles.optionLabel, { color: text }]}>
+    Language: {language === "en" ? "🇬🇧 English" : "🇸🇦 العربية"}
+  </Text>
+  <Ionicons name="language-outline" size={20} color={subtext} />
+</TouchableOpacity>
+
         </View>
 
         {/* Account */}

@@ -43,9 +43,11 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         phone_number=user.phone_number,
         birthday=user.birthday,
     )
+     
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    print('finshed')
     return db_user
 
 

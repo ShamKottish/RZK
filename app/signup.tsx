@@ -1,7 +1,6 @@
 // app/signup.tsx
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -71,7 +70,7 @@ export default function SignUpScreen() {
   const placeholder = darkMode ? "#d1d5db" : "#6b7280";
 
   const handleSignUp = async () => {
-    if (!email || !password || !confirmPwd || !phone || !birthday || !agreed) {
+    if (!email || !password || !confirmPwd || !phone || !agreed) {
       setError(
         "Please fill in all fields, confirm password, select birthday, and accept Terms."
       );
@@ -221,7 +220,7 @@ try {
               </View>
  
               {/* Birthday */}
-              <Pressable
+             {/*       <Pressable
                 style={[
                   styles.inputGroup,
                   { justifyContent: 'center', borderColor: placeholder, backgroundColor: cardBg }
@@ -245,7 +244,7 @@ try {
                   }}
                 />
               )}
-
+*/}
               {/* Terms & Conditions */}
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
                 <Pressable onPress={() => setAgreed(!agreed)} style={{ marginRight: 8 }}>

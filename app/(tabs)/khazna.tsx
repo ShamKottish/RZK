@@ -34,10 +34,10 @@ export default function FamilySavings() {
 
   // mock users & current
   const [availableUsers] = useState<User[]>([
-    { id: '1', name: 'Alice Johnson',  phone: '555-1234' },
-    { id: '2', name: 'Bob Smith',      phone: '555-5678' },
-    { id: '3', name: 'Charlie Nguyen', phone: '555-9012' },
-    { id: '4', name: 'David Lee',      phone: '555-3456' },
+    { id: '1', name: 'Sham Kottish',  phone: '0508125346' },
+    { id: '2', name: 'Yara Abdullah',      phone: '0565362782' },
+    { id: '3', name: 'Ghala Zoriqan', phone: '0537901283' },
+    { id: '4', name: 'Abulrahman Alhassun',      phone: '0504523456' },
   ]);
   const currentUser = availableUsers[0];
 
@@ -142,7 +142,7 @@ const today = React.useMemo(() => {
       >
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
           <Text style={[styles.title, { color: darkMode ? '#fff' : '#000' }]}>
-            Family Savings
+            Khazna
           </Text>
 
           {/* --- Create Goal Form --- */}
