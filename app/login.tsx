@@ -42,23 +42,36 @@ export default function LoginScreen() {
       setError("Please fill in both fields.");
       return;
     }
+
     setError("");
     setLoading(true);
-    setTimeout(async () => {
-      setLoading(false);
-      // Demo credentials
-      const validEmail = "demo@rzk.com";
-      const validPhone = "0551234567";
-      if (
-        (identifier === validEmail || identifier === validPhone) &&
-        password === "password123"
-      ) {
-        await AsyncStorage.setItem("token", "demo-token-123");
-        router.replace("/dashboard");
-      } else {
-        setError("Invalid credentials.");
-      }
-    }, 1000);
+
+try {
+  const response = await fetch("http://192.168.3.53:8000/user/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email: identifier,
+      password: password,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.detail || "Login failed.");
+  }
+
+  await AsyncStorage.setItem("token", data.access_token);
+  router.replace("/dashboard");
+} catch (err: any) {
+  setError(err.message);
+} finally {
+  setLoading(false);
+}
+
   };
 
   return (
