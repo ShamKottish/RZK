@@ -46,9 +46,11 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         savings_goal=user.savings_goal,  # or some default value
         current_savings=user.current_savings  # or some default value
     )
+     
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    print('finshed')
     return db_user
 
 

@@ -11,12 +11,11 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableWithoutFeedback,
-  View,
+  View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../contexts/ThemeContext";
@@ -25,7 +24,9 @@ export default function LoginScreen() {
   const router = useRouter();
   const { darkMode } = useTheme();
   const insets = useSafeAreaInsets();
-
+  const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -58,6 +59,14 @@ export default function LoginScreen() {
     loadSavedCredentials();
   }, []);
 
+  const handleSubmit = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      alert(activeTab === "signup" ? "Account created!" : "Login successful!");
+    }, 1500);
+  };
+
   const handleLogin = async () => {
     if (!identifier || !password) {
       setError("Please fill in both fields.");
@@ -69,10 +78,7 @@ export default function LoginScreen() {
       setLoading(false);
       const validEmail = "demo@rzk.com";
       const validPhone = "0551234567";
-      if (
-        (identifier === validEmail || identifier === validPhone) &&
-        password === "password123"
-      ) {
+      if ((identifier === validEmail || identifier === validPhone) && password === "password123") {
         await AsyncStorage.setItem("token", "demo-token-123");
         if (rememberMe) {
           await AsyncStorage.setItem("savedIdentifier", identifier);
@@ -101,171 +107,149 @@ export default function LoginScreen() {
         Alert.alert("Authentication failed");
       }
     } catch (e) {
-  const err = e as Error;
-  Alert.alert("Biometric error", err.message);
-}
+      const err = e as Error;
+      Alert.alert("Biometric error", err.message);
+    }
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safe,
-        {
-          backgroundColor: bg,
-          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-        },
-      ]}
-    >
-      <View style={[styles.supportButton, { top: insets.top || 16 }]}>
-        <Pressable onPress={() => router.push("/support")}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={[styles.supportButton, { top: insets.top || 16 }]}> 
+        <Pressable onPress={() => router.push("/support")}> 
           <Ionicons name="headset-outline" size={24} color={text} />
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.select({ ios: "padding", android: undefined })}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.inner}>
-            <Text style={[styles.brandTitle, { color: text }]}>
-              <Text style={{ color: "#8b5cf6" }}>RZK</Text>
-            </Text>
+          <View style={styles.card}>
+            <Text style={styles.title}>Welcome to RZK</Text>
 
-            <Text style={[styles.title, { color: text }]}>Welcome Back!</Text>
-            {!!error && <Text style={styles.error}>{error}</Text>}
-
-            <View
-              style={[
-                styles.inputGroup,
-                { backgroundColor: cardBg, borderColor: placeholder },
-              ]}
-            >
-              <Ionicons
-                name={
-                  /^[0-9]+$/.test(identifier)
-                    ? "call-outline"
-                    : "mail-outline"
-                }
-                size={20}
-                color={placeholder}
-              />
-              <TextInput
-                style={[styles.input, { color: text }]}
-                placeholder="Email or Phone"
-                placeholderTextColor={placeholder}
-                keyboardType="default"
-                autoCapitalize="none"
-                value={identifier}
-                onChangeText={setIdentifier}
-              />
+            {/* Tabs */}
+            <View style={styles.tabContainer}>
+              <Pressable onPress={() => setActiveTab("login")} style={[styles.tab, activeTab === "login" && styles.activeTab]}>
+                <Text style={[styles.tabText, activeTab === "login" && styles.activeTabText]}>Login</Text>
+              </Pressable>
+              <Pressable onPress={() => setActiveTab("signup")} style={[styles.tab, activeTab === "signup" && styles.activeTab]}>
+                <Text style={[styles.tabText, activeTab === "signup" && styles.activeTabText]}>Sign Up</Text>
+              </Pressable>
             </View>
 
-            <View
-              style={[
-                styles.inputGroup,
-                { backgroundColor: cardBg, borderColor: placeholder },
-              ]}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={placeholder}
-              />
-              <TextInput
-                style={[styles.input, { color: text }]}
-                placeholder="Password"
-                placeholderTextColor={placeholder}
-                secureTextEntry={!showPwd}
-                value={password}
-                onChangeText={setPassword}
-              />
-              <Pressable onPress={() => setShowPwd((v) => !v)}>
-                <Ionicons
-                  name={showPwd ? "eye-off" : "eye"}
-                  size={20}
-                  color={placeholder}
+            {activeTab === "signup" && (
+              <>
+                <Text style={styles.label}>Username</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your username"
+                  placeholderTextColor="#eee"
+                  value={username}
+                  onChangeText={setUsername}
                 />
-              </Pressable>
-            </View>
+                <Text style={styles.label}>Email Address</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  placeholderTextColor="#eee"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                />
+              </>
+            )}
 
-            {/* Remember Me */}
+            {activeTab === "login" && (
+              <>
+                <Text style={styles.label}>Email or Phone</Text>
+                <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder }]}> 
+                  <Ionicons name={/^[0-9]+$/.test(identifier) ? "call-outline" : "mail-outline"} size={20} color={placeholder} />
+                  <TextInput
+                    style={[styles.input, { color: text }]}
+                    placeholder="Email or Phone"
+                    placeholderTextColor={placeholder}
+                    keyboardType="default"
+                    autoCapitalize="none"
+                    value={identifier}
+                    onChangeText={setIdentifier}
+                  />
+                </View>
+
+             <Text style={styles.label}>Password</Text>
+<View
+  style={[
+    styles.inputGroup,
+    {
+      backgroundColor: cardBg,
+      borderColor: placeholder,
+      justifyContent: "space-between", // space between input and eye
+    },
+  ]}
+>
+  <Ionicons name="lock-closed-outline" size={20} color={placeholder} />
+  
+  <TextInput
+    style={[
+      styles.input,
+      {
+        color: text,
+        flex: 1,            // take remaining space
+        marginLeft: 12,
+        marginRight: 8,     // space before eye
+      },
+    ]}
+    placeholder="Password"
+    placeholderTextColor={placeholder}
+    secureTextEntry={!showPwd}
+    value={password}
+    onChangeText={setPassword}
+  />
+  
+  <Pressable onPress={() => setShowPwd((v) => !v)}>
+    <Ionicons name={showPwd ? "eye-off" : "eye"} size={20} color={placeholder} />
+  </Pressable>
+</View>
+
+                {/* Remember Me */}
+                <Pressable
+                  onPress={() => setRememberMe(!rememberMe)}
+                  style={{ flexDirection: "row", alignItems: "center", marginBottom: 16, alignSelf: "flex-start" }}
+                >
+                  <View style={{ height: 20, width: 20, borderRadius: 4, borderWidth: 1, borderColor: placeholder, backgroundColor: rememberMe ? "#8b5cf6" : "transparent", justifyContent: "center", alignItems: "center", marginRight: 8 }}>
+                    {rememberMe && <Ionicons name="checkmark" size={14} color="#fff" />}
+                  </View>
+                  <Text style={{ color: '#ffff', fontSize: 14 }}>Remember Me</Text>
+                </Pressable>
+
+                    <Pressable onPress={() => router.push("/forgot-password")}>
+                  <Text style={[styles.forgotText, { color: "#ffffffff" }]}>Forgot Password?</Text>
+                </Pressable>
+              </>
+            )}
+
             <Pressable
-              onPress={() => setRememberMe(!rememberMe)}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 16,
-                alignSelf: "flex-start",
-              }}
-            >
-              <View
-                style={{
-                  height: 20,
-                  width: 20,
-                  borderRadius: 4,
-                  borderWidth: 1,
-                  borderColor: placeholder,
-                  backgroundColor: rememberMe ? "#8b5cf6" : "transparent",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginRight: 8,
-                }}
-              >
-                {rememberMe && (
-                  <Ionicons name="checkmark" size={14} color="#fff" />
-                )}
-              </View>
-              <Text style={{ color: text, fontSize: 14 }}>Remember Me</Text>
-            </Pressable>
-
-            {/* Sign Up Prompt */}
-            <View style={styles.signupPrompt}>
-              <Text style={[styles.promptText, { color: text }]}>
-                Don't have an account?{" "}
-              </Text>
-              <Pressable onPress={() => router.push("/signup")}>
-                <Text style={[styles.linkText, { color: "#8b5cf6" }]}>
-                  Sign Up
-                </Text>
-              </Pressable>
-            </View>
-
-            <Pressable onPress={() => router.push("/forgot-password")}>
-              <Text style={[styles.forgotText, { color: "#8b5cf6" }]}>
-                Forgot Password?
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.button,
-                { backgroundColor: "#8b5cf6" },
-                (!identifier || !password || loading) && styles.buttonDisabled,
-              ]}
-              onPress={handleLogin}
-              disabled={!identifier || !password || loading}
+              onPress={activeTab === "signup" ? handleSubmit : handleLogin}
+              disabled={loading || (activeTab === "login" && (!identifier || !password))}
+              style={[styles.button, loading && { opacity: 0.6 }]}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Log In</Text>
+                <Text style={styles.buttonText}>
+                  {activeTab === "signup" ? "Create Account" : "Sign In"}
+                </Text>
               )}
             </Pressable>
 
-            {/* Biometric Login */}
-            {biometricAvailable && (
-              <Pressable
-                style={[styles.button, { backgroundColor: "#8b5cf6" }]}
-                onPress={authenticateBiometric}
-              >
+            {biometricAvailable && activeTab === "login" && (
+              <Pressable style={styles.button} onPress={authenticateBiometric}>
                 <Text style={styles.buttonText}>Activate Quick Log In</Text>
               </Pressable>
             )}
 
-            <Text style={[styles.demoHint, { color: placeholder }]}>
-              Demo: demo@rzk.com or 0551234567 / password123
-            </Text>
+            {activeTab === "login" && (
+              <Text style={[styles.demoHint, { color: bg }]}>Demo: demo@rzk.com or 0551234567 / password123</Text>
+            )}
+
+            {!!error && <Text style={styles.error}>{error}</Text>}
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -274,81 +258,99 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
+  safeArea: {
     flex: 1,
-    backgroundColor: "#6b21a8",
+    backgroundColor: "#fff",
   },
   container: {
     flex: 1,
-  },
-  inner: {
-    flex: 1,
-    alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
-  brandTitle: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 24,
+  card: {
+    backgroundColor: "#6d28d9",
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 6,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 24,
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  tabContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: "#a78bfa",
+    borderRadius: 999,
+    marginBottom: 20,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 999,
+    alignItems: "center",
+  },
+  activeTab: {
+    backgroundColor: "#fff",
+  },
+  tabText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  activeTabText: {
+    color: "#6d28d9",
+  },
+  label: {
+    color: "#ffffffff",
+    fontSize: 14,
+    marginBottom: 6,
+    marginTop: 10,
+  },
+  input: {
+    color: "#fff",
+    paddingHorizontal: 14,
+    paddingVertical: 30,
   },
   inputGroup: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    width: "100%",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+    height: 48,
     borderWidth: 1,
   },
-  input: {
-    flex: 1,
-    height: 50,
-    marginLeft: 12,
+  button: {
+    backgroundColor: "#9333ea",
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 20,
+    alignItems: "center",
   },
-  signupPrompt: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginVertical: 12,
-  },
-  promptText: {
-    fontSize: 14,
-  },
-  linkText: {
-    fontSize: 14,
-    fontWeight: "600",
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   forgotText: {
     marginTop: 8,
     fontSize: 14,
     textDecorationLine: "underline",
   },
-  button: {
-    height: 50,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 8,
-    width: "100%",
+  promptText: {
+    color: "#e0e7ff",
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
+  linkText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  supportButton: {
-    position: "absolute",
-    top: 16,
-    left: 16,
-    zIndex: 10,
+    fontWeight: "600",
   },
   demoHint: {
     marginTop: 16,
@@ -357,7 +359,18 @@ const styles = StyleSheet.create({
   },
   error: {
     color: "#fecaca",
-    marginBottom: 12,
+    marginTop: 12,
     textAlign: "center",
+  },
+  supportButton: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    zIndex: 10,
+  },
+  signupPrompt: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginVertical: 12,
   },
 });
