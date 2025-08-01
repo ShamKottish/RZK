@@ -4,11 +4,14 @@ from app.services.openai_agent import get_financial_advice_from_chatbot
 
 router = APIRouter(prefix="/ai", tags=["AI Chat"])
 
+
 class ChatRequest(BaseModel):
     message: str
 
+
 class ChatResponse(BaseModel):
     reply: str
+
 
 @router.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):

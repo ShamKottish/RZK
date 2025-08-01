@@ -6,7 +6,7 @@ import openai
 
 # Load environment variables from .env
 load_dotenv()
-openai.api_key = os.getenv("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")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # gpt-3.5-turbo (cheaper) or gpt-4o (smarter, more impressive), possibility of change depending on use
 MODEL = "gpt-4o"

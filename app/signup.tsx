@@ -1,6 +1,7 @@
 // app/signup.tsx
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -20,17 +21,17 @@ import {
 import { useTheme } from "../contexts/ThemeContext";
 
 const TOP_BAR_HEIGHT = 56;
+const router = useRouter();
 
 // Add this near the top of your file (after imports)
 
-const BASE_URL = "http://192.168.100.223:8000"; // Replace with your local IP and backend port
+const BASE_URL = "http://192.168.7.242:8000"; // Replace with your local IP and backend port
 
   export default function SignUpScreen()
 {
   const router = useRouter();
   const { darkMode } = useTheme();
 
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
@@ -48,51 +49,43 @@ const BASE_URL = "http://192.168.100.223:8000"; // Replace with your local IP an
   const placeholder = darkMode ? "#d1d5db" : "#6b7280";
 
   const handleSignUp = async () => {
-    if (!email || !password || !confirmPwd || !phone || !agreed) {
-      setError(
-        "Please fill in all fields, confirm password, select birthday, and accept Terms."
-      );
-      return;
-    }
-    if (password !== confirmPwd) {
-      setError("Passwords do not match.");
-      return;
-    }
-    if (phone.length < 9) {
-      setError("Phone number must be at least 9 digits.");
-      return;
-    }
-    setError("");
-    setLoading(true);
-try {
-  const birthdayString = birthday?.toISOString().split("T")[0] || "";
-
-  const res = await registerUser({
-    email,
-    password,
-    phone,
-    birthday: birthdayString,
-  });
-
-  // Assume backend returns a token on success
-  await AsyncStorage.setItem("token", res.token);
-  router.replace("/dashboard");
-
-} catch (err) {
-  console.error("SignUp error:", JSON.stringify(err));
-
-  if (err instanceof Error) {
-    setError(err.message);
-  } else if (typeof err === "object" && err !== null) {
-    setError(JSON.stringify(err));
-  } else {
-    setError("Something went wrong.");
+  if (!email || !password || !confirmPwd || !phone || !agreed) {
+    setError("Please fill in all fields, confirm password, select birthday, and accept Terms.");
+    return;
+  }
+  if (password !== confirmPwd) {
+    setError("Passwords do not match.");
+    return;
+  }
+  if (phone.length < 9) {
+    setError("Phone number must be at least 9 digits.");
+    return;
   }
 
-} finally {
-  setLoading(false);
-    }
-  };
+  setError("");
+  setLoading(true);
+
+  try {
+    const birthdayString = birthday?.toISOString().split("T")[0] || "";
+
+    const res = await registerUser({
+      email,
+      password,
+      phone_number: phone,
+      birthday: birthdayString,
+    });
+
+    await AsyncStorage.setItem("token", res.access_token);
+    router.replace("/dashboard");
+  } catch (err) {
+    console.error("SignUp error:", JSON.stringify(err));
+    if (err instanceof Error) setError(err.message);
+    else if (typeof err === "object" && err !== null) setError(JSON.stringify(err));
+    else setError("Something went wrong.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
@@ -188,7 +181,7 @@ try {
                 <Text style={[styles.prefix, { color: text }]}>+966</Text>
                 <TextInput
                   style={[styles.input, { color: text, marginLeft: 4 }]}
-                  placeholder="5********"
+                  placeholder="5**"
                   placeholderTextColor={placeholder}
                   keyboardType="phone-pad"
                   value={phone}
@@ -197,7 +190,7 @@ try {
               </View>
 
               {/* Birthday */}
-             {/*       <Pressable
+                    <Pressable
                 style={[
                   styles.inputGroup,
                   { justifyContent: 'center', borderColor: placeholder, backgroundColor: cardBg }
@@ -221,7 +214,7 @@ try {
                   }}
                 />
               )}
-*/}
+
               {/* Terms & Conditions */}
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
                 <Pressable onPress={() => setAgreed(!agreed)} style={{ marginRight: 8 }}>
@@ -265,16 +258,14 @@ try {
     </SafeAreaView>
   );
 }
-
 type SignupPayload = {
-  name: string;
   email: string;
   password: string;
   phone_number: string;
   birthday: string;
 };
 
-const registerUser = async (payload: SignupPayload) => {
+const registerUser = async (payload: SignupPayload): Promise<{ access_token: string }> => {
   const response = await fetch(`${BASE_URL}/user/signup`, {
     method: "POST",
     headers: {
@@ -284,15 +275,12 @@ const registerUser = async (payload: SignupPayload) => {
   });
 
   const data = await response.json();
-  if (!response.ok)
+  if (!response.ok) {
     throw new Error(data.detail || "Signup failed.");
-await AsyncStorage.setItem("token", data.access_token);
-router.replace("/dashboard");
+  }
+
+  return data;
 };
-
-
-
-
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },

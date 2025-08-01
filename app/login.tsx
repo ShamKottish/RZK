@@ -68,7 +68,7 @@ export default function LoginScreen() {
 
   setLoading(true);
   try {
-    const response = await fetch("http://<192.168.100.223>:8000/user/login", {
+    const response = await fetch("http://<192.168.7.242>:8000/user/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: identifier, password }),
@@ -87,7 +87,7 @@ export default function LoginScreen() {
   const handleSignup = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://192.168.100.223:8000/user/login", {
+      const response = await fetch("http://192.168.7.242:8000/user/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -95,6 +95,8 @@ export default function LoginScreen() {
         body: JSON.stringify({
           email,
           password,
+          phone_number: phone_number,
+          birthday: birthday,
         }),
       });
 

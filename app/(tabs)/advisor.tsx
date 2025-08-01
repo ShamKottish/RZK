@@ -15,6 +15,8 @@ import {
 } from "react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 
+const BASE_URL = "http://192.168.7.242:8000";
+
 interface Message {
   id: string;
   text: string;
@@ -42,7 +44,7 @@ export default function Advisor() {
     setLoading(true);
 
     try {
-      const res = await fetch("https://your-api.com/ai", {
+      const res = await fetch(`${BASE_URL}/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: userMsg.text }),
