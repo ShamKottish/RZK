@@ -161,20 +161,11 @@ export default function LoginScreen() {
               <>
                 <Text style={styles.label}>Username</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: text }]}
                   placeholder="Enter your username"
-                  placeholderTextColor="#eee"
+                  placeholderTextColor={placeholder}
                   value={username}
                   onChangeText={setUsername}
-                />
-                <Text style={styles.label}>Email Address</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your email"
-                  placeholderTextColor="#eee"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
                 />
               </>
             )}
@@ -194,10 +185,10 @@ export default function LoginScreen() {
             </View>
 
             <Text style={styles.label}>Password</Text>
-            <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder, justifyContent: "space-between" }]}>
+            <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder }]}>
               <Ionicons name="lock-closed-outline" size={20} color={placeholder} />
               <TextInput
-                style={[styles.input, { color: text, flex: 1, marginLeft: 12, marginRight: 8 }]}
+                style={[styles.input, { color: text, flex: 1 }]}
                 placeholder="Password"
                 placeholderTextColor={placeholder}
                 secureTextEntry={!showPwd}
