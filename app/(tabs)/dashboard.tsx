@@ -170,32 +170,41 @@ export default function Dashboard() {
   const [earnedBadges, setEarnedBadges] = useState<BadgeDef[]>([]);
 
 useEffect(() => {
-  AsyncStorage.getItem("userName").then((n) => n && setUserName(n));
-  AsyncStorage.getItem("userEmail").then((e) => e && setUserEmail(e));
+  const load = async () => {
+    try {
+      const name = await AsyncStorage.getItem("userName");
+      if (name) setUserName(name);
 
-  fetch("http://192.168.7.242:8000/savings/goals")  // use your actual IP here
-    .then(res => res.json())
-    .then(goals => {
+      const email = await AsyncStorage.getItem("userEmail");
+      if (email) setUserEmail(email);
+
+      const res = await fetch("http://192.168.100.223:8000/savings/goals");
+      const goals = await res.json();
+
       setActiveGoals(goals);
-      setTotalSavings(goals.reduce((sum, g) => sum + g.current_amount, 0));
+      setTotalSavings(goals.reduce((sum: number, g: any) => sum + g.current_amount, 0));
       setGoalsCount(goals.length);
-      setGoalsCompleted(goals.filter((g) => g.current_amount >= g.target_amount).length);
+      setGoalsCompleted(goals.filter((g: any) => g.current_amount >= g.target_amount).length);
 
-      const eb = BADGE_DEFS.filter((b) =>
-        goals.some((g) => g.current_amount / g.target_amount >= b.threshold)
+      const ebFromGoals = BADGE_DEFS.filter((b) =>
+        goals.some((g: any) => g.current_amount / g.target_amount >= b.threshold)
       );
-      setEarnedBadges(eb);
-    })
-    .catch(err => {
+      setEarnedBadges(ebFromGoals);
+    } catch (err) {
       console.error("Fetch error:", err);
-    });
-}, []);
 
-    const eb = BADGE_DEFS.filter((b) =>
-      mock.some((g) => g.saved / g.target >= b.threshold)
-    );
-    setEarnedBadges(eb);
-  }, []);
+      // Optional fallback if you have mock data; define `mock` above or replace with real fallback.
+      if (typeof mock !== "undefined" && Array.isArray(mock)) {
+        const ebMock = BADGE_DEFS.filter((b) =>
+          mock.some((g: any) => g.saved / g.target >= b.threshold)
+        );
+        setEarnedBadges(ebMock);
+      }
+    }
+  };
+
+  load();
+}, []);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>

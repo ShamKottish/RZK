@@ -23,36 +23,14 @@ const TOP_BAR_HEIGHT = 56;
 
 // Add this near the top of your file (after imports)
 
-const BASE_URL = "https://e671de40ef7c.ngrok-free.app"; // Replace with your local IP and backend port
+const BASE_URL = "http://192.168.100.223:8000"; // Replace with your local IP and backend port
 
-const registerUser = async (payload: {
-  email: string;
-  password: string;
-  phone: string;
-}) => {
-  const response = await fetch(`${BASE_URL}/user/users`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.detail || "Registration failed");
-  }
-
-  return response.json(); // Adjust based on your backend's response
-};
-
-
-
-
-export default function SignUpScreen() {
+  export default function SignUpScreen()
+{
   const router = useRouter();
   const { darkMode } = useTheme();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
@@ -86,7 +64,6 @@ export default function SignUpScreen() {
     }
     setError("");
     setLoading(true);
-setLoading(true);
 try {
   const birthdayString = birthday?.toISOString().split("T")[0] || "";
 
@@ -118,12 +95,12 @@ try {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>    
+    <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={text} />
         </Pressable>
-        <Text style={[styles.brandTitle, { color: text }]}>  
+        <Text style={[styles.brandTitle, { color: text }]}>
           <Text style={{ color: '#8b5cf6', fontWeight: '800', fontSize: 25 }}>RZK</Text>
         </Text>
       </View>
@@ -218,7 +195,7 @@ try {
                   onChangeText={t => setPhone(t.replace(/\D/g, ""))}
                 />
               </View>
- 
+
               {/* Birthday */}
              {/*       <Pressable
                 style={[
@@ -236,8 +213,8 @@ try {
                   value={birthday || new Date()}
                   mode="date"
                   display={Platform.OS === 'android' ? 'calendar' : 'inline'}
-                  themeVariant={darkMode ? "dark" : "light"} 
-                  textColor={text} 
+                  themeVariant={darkMode ? "dark" : "light"}
+                  textColor={text}
                   onChange={(e: DateTimePickerEvent, d?: Date) => {
                     setShowBirthdayPicker(false);
                     if (d) setBirthday(d);
@@ -288,6 +265,34 @@ try {
     </SafeAreaView>
   );
 }
+
+type SignupPayload = {
+  name: string;
+  email: string;
+  password: string;
+  phone_number: string;
+  birthday: string;
+};
+
+const registerUser = async (payload: SignupPayload) => {
+  const response = await fetch(`${BASE_URL}/user/signup`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+  if (!response.ok)
+    throw new Error(data.detail || "Signup failed.");
+await AsyncStorage.setItem("token", data.access_token);
+router.replace("/dashboard");
+};
+
+
+
+
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },

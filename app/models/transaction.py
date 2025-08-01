@@ -15,4 +15,5 @@ class Transaction(Base):
     description = Column(String(255), nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", back_populates="transactions")
+    user = relationship("app.models.user.User", back_populates="transactions")
+

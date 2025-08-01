@@ -66,32 +66,28 @@ export default function LoginScreen() {
       return;
     }
 
-    setError("");
-    setLoading(true);
-    setTimeout(async () => {
-      setLoading(false);
-      const validEmail = "demo@rzk.com";
-      const validPhone = "0551234567";
-      if ((identifier === validEmail || identifier === validPhone) && password === "password123") {
-        await AsyncStorage.setItem("token", "demo-token-123");
-        if (rememberMe) {
-          await AsyncStorage.setItem("savedIdentifier", identifier);
-          await AsyncStorage.setItem("savedPassword", password);
-        } else {
-          await AsyncStorage.removeItem("savedIdentifier");
-          await AsyncStorage.removeItem("savedPassword");
-        }
-        router.replace("/dashboard");
-      } else {
-        setError("Invalid credentials.");
-      }
-    }, 1000);
-  };
+  setLoading(true);
+  try {
+    const response = await fetch("http://<192.168.100.223>:8000/user/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: identifier, password }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Login failed.");
+    await AsyncStorage.setItem("token", data.access_token);
+    router.replace("/dashboard");
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSignup = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://192.168.3.53:8000/user/login", {
+      const response = await fetch("http://192.168.100.223:8000/user/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -5,6 +5,7 @@ load_dotenv()
 from fastapi import FastAPI
 from app.routes import user, finance, ai_chat, savings, transaction, stocks, dashboard, watchlist
 from fastapi.middleware.cors import CORSMiddleware
+from app.routes.user import router as user_router
 
 app = FastAPI()
 
@@ -16,14 +17,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-#origins = [
- #   "http://localhost:8082",
-#]
-
 
 
 # Include your route modules
-app.include_router(user.router, prefix="/user")
+app.include_router(user.router)
 app.include_router(finance.router, prefix="/finance")
 app.include_router(ai_chat.router, prefix="/ai_chat")
 app.include_router(savings.router, prefix="/savings")

@@ -5,8 +5,6 @@ from app.db.database import Base
 
 class SavingsGoal(Base):
     __tablename__ = "savings_goals"
-    __table_args__ = {'extend_existing': True}
-
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
@@ -19,5 +17,5 @@ class SavingsGoal(Base):
     interest_type = Column(String(255))
     risk_tolerance = Column(String(255))
 
-    user = relationship("User", back_populates="savings_goals")
+    user = relationship("app.models.user.User", back_populates="savings_goals")
 
