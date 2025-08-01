@@ -10,9 +10,10 @@ class Transaction(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     savings_goal_id = Column(Integer, ForeignKey("savings_goals.id"), nullable=True)
 
-    type = Column(String, nullable=False)
+    type = Column(String(255), nullable=False)
     amount = Column(Float, nullable=True)
-    description = Column(String, nullable=True)
+    description = Column(String(255), nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", back_populates="transactions")
+    user = relationship("app.models.user.User", back_populates="transactions")
+

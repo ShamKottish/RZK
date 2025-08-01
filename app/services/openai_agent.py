@@ -6,7 +6,7 @@ import openai
 
 # Load environment variables from .env
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("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")
 
 # gpt-3.5-turbo (cheaper) or gpt-4o (smarter, more impressive), possibility of change depending on use
 MODEL = "gpt-4o"
@@ -23,6 +23,7 @@ def get_financial_advice_from_chatbot(user_message: str) -> str:
             "You are a friendly and culturally aware financial advisor for young people in Saudi Arabia. "
             "You analyze the input given by the user, and recommend them stocks to invest in."
             "Prioritize local Saudi companies/stocks, and give a brief explanation on why and why not to invest in "
+            "Get your stock information from www.saudiexchange.sa mainly, don't use other sources unless necessary."
             "the companies you recommend."
             "Mention how the company is doing, how it operates, what are its growth potentials, competitors, "
             "risk levels, how it'll the user achieve their goals, and whatever else is relevant to the user."

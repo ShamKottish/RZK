@@ -21,10 +21,16 @@ import { useTheme } from "../contexts/ThemeContext";
 
 const TOP_BAR_HEIGHT = 56;
 
-export default function SignUpScreen() {
+// Add this near the top of your file (after imports)
+
+const BASE_URL = "http://192.168.100.223:8000"; // Replace with your local IP and backend port
+
+  export default function SignUpScreen()
+{
   const router = useRouter();
   const { darkMode } = useTheme();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
@@ -58,20 +64,43 @@ export default function SignUpScreen() {
     }
     setError("");
     setLoading(true);
-    setTimeout(async () => {
-      setLoading(false);
-      await AsyncStorage.setItem("token", "demo-token-123");
-      router.replace("/dashboard");
-    }, 1000);
+try {
+  const birthdayString = birthday?.toISOString().split("T")[0] || "";
+
+  const res = await registerUser({
+    email,
+    password,
+    phone,
+    birthday: birthdayString,
+  });
+
+  // Assume backend returns a token on success
+  await AsyncStorage.setItem("token", res.token);
+  router.replace("/dashboard");
+
+} catch (err) {
+  console.error("SignUp error:", JSON.stringify(err));
+
+  if (err instanceof Error) {
+    setError(err.message);
+  } else if (typeof err === "object" && err !== null) {
+    setError(JSON.stringify(err));
+  } else {
+    setError("Something went wrong.");
+  }
+
+} finally {
+  setLoading(false);
+    }
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>    
+    <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={text} />
         </Pressable>
-        <Text style={[styles.brandTitle, { color: text }]}>  
+        <Text style={[styles.brandTitle, { color: text }]}>
           <Text style={{ color: '#8b5cf6', fontWeight: '800', fontSize: 25 }}>RZK</Text>
         </Text>
       </View>
@@ -166,7 +195,7 @@ export default function SignUpScreen() {
                   onChangeText={t => setPhone(t.replace(/\D/g, ""))}
                 />
               </View>
- 
+
               {/* Birthday */}
              {/*       <Pressable
                 style={[
@@ -184,8 +213,8 @@ export default function SignUpScreen() {
                   value={birthday || new Date()}
                   mode="date"
                   display={Platform.OS === 'android' ? 'calendar' : 'inline'}
-                  themeVariant={darkMode ? "dark" : "light"} 
-                  textColor={text} 
+                  themeVariant={darkMode ? "dark" : "light"}
+                  textColor={text}
                   onChange={(e: DateTimePickerEvent, d?: Date) => {
                     setShowBirthdayPicker(false);
                     if (d) setBirthday(d);
@@ -236,6 +265,34 @@ export default function SignUpScreen() {
     </SafeAreaView>
   );
 }
+
+type SignupPayload = {
+  name: string;
+  email: string;
+  password: string;
+  phone_number: string;
+  birthday: string;
+};
+
+const registerUser = async (payload: SignupPayload) => {
+  const response = await fetch(`${BASE_URL}/user/signup`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+  if (!response.ok)
+    throw new Error(data.detail || "Signup failed.");
+await AsyncStorage.setItem("token", data.access_token);
+router.replace("/dashboard");
+};
+
+
+
+
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },

@@ -1,3 +1,5 @@
+from datetime import date
+
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
@@ -5,11 +7,9 @@ from typing import Optional
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
-    savings: float
     password: str
-    savings_goal: Optional[float] = None
-    current_savings: float = 0.0
-
+    phone_number: str
+    birthday: date
 
 class UserResponse(BaseModel):
     id: int

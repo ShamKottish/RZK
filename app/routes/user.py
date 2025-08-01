@@ -9,22 +9,9 @@ from app.schemas.user import UserResponse, UserCreate, UserLogin
 from app.services.auth import hash_password, verify_password, create_access_token
 from app.services.auth import get_current_user
 from app.db.database import get_db
+from app.schemas.user import UserLogin
 
-'''def create_user(user: UserCreate, db: Session):
-    db_user = User(
-        name=user.name,
-        email=user.email,
-        password_hash=hash_password(user.password),
-        savings_goal=user.savings_goal,
-        current_savings=user.current_savings
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
-'''
-
-router = APIRouter()
+router = APIRouter(prefix="/user", tags=["user"])
 
 
 # Get all users
@@ -35,26 +22,27 @@ def get_users(db: Session = Depends(get_db)):
 
 
 # Create a new user
-@router.post("/users")
+@router.post("/signup")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.email == user.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
     db_user = User(
-        name=user.name,
         email=user.email,
         password_hash=hash_password(user.password),
-        savings=user.savings,
-        savings_goal=user.savings_goal,  # or some default value
-        current_savings=user.current_savings  # or some default value
+        phone_number=user.phone_number,
+        birthday=user.birthday,
     )
      
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    print('finshed')
-    return db_user
+    access_token = create_access_token(user_id=db_user.id)
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 # Update savings
-@router.put("/users/{user_id}/savings")
+@router.put("/{user_id}/savings")
 def update_savings(user_id: int, amount: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -64,21 +52,14 @@ def update_savings(user_id: int, amount: int, db: Session = Depends(get_db)):
     return {"message": "Savings updated", "current_savings": user.current_savings}
 
 
-@router.post("/user/login")
-async def login(
-        form_data: OAuth2PasswordRequestForm = Depends(),
-        db: Session = Depends(get_db)
-):
-    # Find user by email (username in form_data)
-    db_user = db.query(User).filter(User.email == form_data.username).first()
-
+@router.post("/login")
+def login(form_data: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.email == form_data.email).first()
     if not db_user or not verify_password(form_data.password, db_user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    # Generate JWT token
-    token = create_access_token({"user_id": db_user.id})
-
+    token = create_access_token(user_id=db_user.id)
     return {"access_token": token, "token_type": "bearer"}
+
 
 
 @router.get("/profile")

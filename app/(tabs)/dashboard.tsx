@@ -169,24 +169,42 @@ export default function Dashboard() {
   >([]);
   const [earnedBadges, setEarnedBadges] = useState<BadgeDef[]>([]);
 
-  useEffect(() => {
-    AsyncStorage.getItem("userName").then((n) => n && setUserName(n));
-    AsyncStorage.getItem("userEmail").then((e) => e && setUserEmail(e));
+useEffect(() => {
+  const load = async () => {
+    try {
+      const name = await AsyncStorage.getItem("userName");
+      if (name) setUserName(name);
 
-    const mock = [
-      { name: "Car Fund", saved: 12000, target: 20000, deadline: "2025-12-31" },
-      { name: "Vacation", saved: 5000, target: 5000, deadline: "2025-08-15" },
-    ];
-    setActiveGoals(mock);
-    setTotalSavings(mock.reduce((sum, g) => sum + g.saved, 0));
-    setGoalsCount(mock.length);
-    setGoalsCompleted(mock.filter((g) => g.saved >= g.target).length);
+      const email = await AsyncStorage.getItem("userEmail");
+      if (email) setUserEmail(email);
 
-    const eb = BADGE_DEFS.filter((b) =>
-      mock.some((g) => g.saved / g.target >= b.threshold)
-    );
-    setEarnedBadges(eb);
-  }, []);
+      const res = await fetch("http://192.168.100.223:8000/savings/goals");
+      const goals = await res.json();
+
+      setActiveGoals(goals);
+      setTotalSavings(goals.reduce((sum: number, g: any) => sum + g.current_amount, 0));
+      setGoalsCount(goals.length);
+      setGoalsCompleted(goals.filter((g: any) => g.current_amount >= g.target_amount).length);
+
+      const ebFromGoals = BADGE_DEFS.filter((b) =>
+        goals.some((g: any) => g.current_amount / g.target_amount >= b.threshold)
+      );
+      setEarnedBadges(ebFromGoals);
+    } catch (err) {
+      console.error("Fetch error:", err);
+
+      // Optional fallback if you have mock data; define `mock` above or replace with real fallback.
+      if (typeof mock !== "undefined" && Array.isArray(mock)) {
+        const ebMock = BADGE_DEFS.filter((b) =>
+          mock.some((g: any) => g.saved / g.target >= b.threshold)
+        );
+        setEarnedBadges(ebMock);
+      }
+    }
+  };
+
+  load();
+}, []);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>

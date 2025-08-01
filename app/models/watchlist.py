@@ -7,8 +7,8 @@ class WatchlistItem(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    symbol = Column(String)
-    company_name = Column(String)
+    symbol = Column(String(255))
+    company_name = Column(String(255))
 
     class Config:
         orm_mode = True
