@@ -29,6 +29,11 @@ def get_financial_advice_from_chatbot(user_message: str) -> str:
             "risk levels, how it'll the user achieve their goals, and whatever else is relevant to the user."
             "Be supportive, never judgmental. Keep advice short and practical "
             "Respond in Arabic if user input is in Arabic, otherwise respond in English."
+            "Do not under any circumstances use any markdown or formatting tokens — no **bold**, __underline__, "
+            "*italics*, backticks, headings, bullet markers, or any other markup. Return plain unstyled text only."
+            "When the user chooses a company to invest in or asks you for more information on a specific company, "
+            "make sure to list the risk tolerance "
+            "(considerate/medium/high) and return on investment in percentage."
         )
     }
 
@@ -40,7 +45,7 @@ def get_financial_advice_from_chatbot(user_message: str) -> str:
                 {"role": "user", "content": user_message}
             ],
             temperature=0.7,
-            max_tokens=150
+            max_tokens=300
         )
 
         return response.choices[0].message["content"]

@@ -62,31 +62,52 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!identifier || !password) {
+    console.log("handleLogin: missing fields", { identifier, passwordProvided: !!password });
       setError("Please fill in both fields.");
       return;
     }
 
   setLoading(true);
+  console.log("handleLogin: starting login", { identifier });
   try {
-    const response = await fetch("http://<192.168.7.242>:8000/user/login", {
+    const payload = { email: identifier, password };
+    console.log("handleLogin: sending request", payload);
+    const response = await fetch("http://192.168.7.242:8000/user/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: identifier, password }),
     });
+    console.log("handleLogin: received response", { status: response.status, ok: response.ok });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Login failed.");
+    console.log("handleLogin: parsed JSON response", data);
+    if (!response.ok) {
+      console.log("handleLogin: login failed, throwing error", { detail: data.detail });
+      throw new Error(data.detail || "Login failed.");
+    }
     await AsyncStorage.setItem("token", data.access_token);
+    console.log("handleLogin: token saved to AsyncStorage");
     router.replace("/dashboard");
+    console.log("handleLogin: navigated to /dashboard");
   } catch (err: any) {
+    console.log("handleLogin: caught error", err);
     setError(err.message);
   } finally {
     setLoading(false);
+    console.log("handleLogin: finished, loading set to false");
   }
 };
 
   const handleSignup = async () => {
+    console.log("handleSignup: starting signup", { email, phone_number, birthday });
     setLoading(true);
     try {
+      const payload = {
+      email,
+      password,
+      phone_number: phone_number,
+      birthday: birthday,
+    };
+      console.log("handleSignup: sending request", payload);
       const response = await fetch("http://192.168.7.242:8000/user/signup", {
         method: "POST",
         headers: {
@@ -100,18 +121,26 @@ export default function LoginScreen() {
         }),
       });
 
-      const data = await response.json();
+    console.log("handleSignup: received response", { status: response.status, ok: response.ok });
+    const data = await response.json();
+    console.log("handleSignup: parsed JSON response", data);
 
       if (!response.ok) {
+        console.log("handleSignup: signup failed, throwing error", { detail: data.detail });
         throw new Error(data.detail || "Signup failed.");
       }
 
       await AsyncStorage.setItem("token", data.access_token);
+      console.log("handleSignup: token saved to AsyncStorage");
       router.replace("/dashboard");
+      console.log("handleSignup: navigated to /dashboard");
     } catch (err: any) {
+    console.log("handleSignup: caught error", err);
+
       setError(err.message);
     } finally {
       setLoading(false);
+      console.log("handleSignup: finished, loading set to false");
     }
   };
 

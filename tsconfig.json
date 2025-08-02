@@ -13,9 +13,7 @@
     "declarations.d.ts",
     "contexts/ThemeContext.tsx",
     "app/**/*",
-    "assets/**/*",
-    "expo-env.d.ts",
-    ".expo/types/**/*.ts"
+    "assets/**/*"
   ],
   "exclude": [
     "node_modules"

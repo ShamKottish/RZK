@@ -49,24 +49,52 @@ const BASE_URL = "http://192.168.7.242:8000"; // Replace with your local IP and 
   const placeholder = darkMode ? "#d1d5db" : "#6b7280";
 
   const handleSignUp = async () => {
+    console.log("handleSignUp: invoked", {
+    email,
+    passwordProvided: !!password,
+    confirmPwdProvided: !!confirmPwd,
+    phone,
+    agreed,
+    birthday,
+  });
   if (!email || !password || !confirmPwd || !phone || !agreed) {
+      console.log("handleSignUp: validation failed - missing fields", {
+      email,
+      passwordPresent: !!password,
+      confirmPwdPresent: !!confirmPwd,
+      phone,
+      agreed,
+    });
     setError("Please fill in all fields, confirm password, select birthday, and accept Terms.");
     return;
   }
   if (password !== confirmPwd) {
+    console.log("handleSignUp: validation failed - passwords do not match", {
+    passwordLength: password.length,
+    confirmPwdLength: confirmPwd.length,
+    });
     setError("Passwords do not match.");
     return;
   }
   if (phone.length < 9) {
+   console.log("handleSignUp: validation failed - phone too short", { phone });
     setError("Phone number must be at least 9 digits.");
     return;
   }
 
   setError("");
   setLoading(true);
+  console.log("handleSignUp: passed validation, proceeding", { email, phone, agreed });
 
   try {
     const birthdayString = birthday?.toISOString().split("T")[0] || "";
+    console.log("handleSignUp: formatted birthday", { birthdayString });
+
+    console.log("handleSignUp: calling registerUser", {
+      email,
+      phone_number: phone,
+      birthday: birthdayString,
+    });
 
     const res = await registerUser({
       email,
@@ -74,16 +102,22 @@ const BASE_URL = "http://192.168.7.242:8000"; // Replace with your local IP and 
       phone_number: phone,
       birthday: birthdayString,
     });
+    console.log("handleSignUp: registerUser response", res);
 
     await AsyncStorage.setItem("token", res.access_token);
+    console.log("handleSignUp: token saved to AsyncStorage");
+
     router.replace("/dashboard");
+    console.log("handleSignUp: navigated to /dashboard");
   } catch (err) {
+    console.log("handleSignUp: caught error", err);
     console.error("SignUp error:", JSON.stringify(err));
     if (err instanceof Error) setError(err.message);
     else if (typeof err === "object" && err !== null) setError(JSON.stringify(err));
     else setError("Something went wrong.");
   } finally {
     setLoading(false);
+    console.log("handleSignUp: finished, loading set to false");
   }
 };
 
