@@ -1,10 +1,15 @@
 // app/(tabs)/_layout.tsx
+import { I18nProvider } from "@/app/lib/i18n";
+import { useI18n } from "@/contexts/I18nContext";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
 
 export default function TabLayout() {
+  const { t } = useI18n();
+
   return (
+        <I18nProvider> 
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -17,7 +22,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: "Dashboard",
+          title: t("dashboard"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="home-outline" size={size} color={color} />
           ),
@@ -26,7 +31,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="savings"
         options={{
-          title: "Savings",
+          title: ("savings"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="wallet-outline" size={size} color={color} />
           ),
@@ -35,7 +40,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="advisor"
         options={{
-          title: "Advisor",
+          title: ("advisor"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="robot-outline" size={size} color={color} />
           ),
@@ -44,7 +49,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="khazna"
         options={{
-          title: "Khazna",
+          title: t("khazna"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="account-group-outline"
@@ -57,12 +62,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
+          title: t("settings"),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="cog-outline" size={size} color={color} />
           ),
         }}
       />
     </Tabs>
+        </I18nProvider>
   );
 }

@@ -1,3 +1,4 @@
+
 # contains the core logic of the AI chatbot behind the routes (user & finance)?
 
 import os
@@ -6,7 +7,7 @@ import openai
 
 # Load environment variables from .env
 load_dotenv()
-openai.api_key = os.getenv("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")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # gpt-3.5-turbo (cheaper) or gpt-4o (smarter, more impressive), possibility of change depending on use
 MODEL = "gpt-4o"
@@ -29,6 +30,11 @@ def get_financial_advice_from_chatbot(user_message: str) -> str:
             "risk levels, how it'll the user achieve their goals, and whatever else is relevant to the user."
             "Be supportive, never judgmental. Keep advice short and practical "
             "Respond in Arabic if user input is in Arabic, otherwise respond in English."
+            "Do not under any circumstances use any markdown or formatting tokens — no *bold*, _underline_, "
+            "italics, backticks, headings, bullet markers, or any other markup. Return plain unstyled text only."
+            "When the user chooses a company to invest in or asks you for more information on a specific company, "
+            "make sure to list the risk tolerance "
+            "(considerate/medium/high) and return on investment in percentage."
         )
     }
 
@@ -40,7 +46,7 @@ def get_financial_advice_from_chatbot(user_message: str) -> str:
                 {"role": "user", "content": user_message}
             ],
             temperature=0.7,
-            max_tokens=150
+            max_tokens=300
         )
 
         return response.choices[0].message["content"]

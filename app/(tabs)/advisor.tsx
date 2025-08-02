@@ -15,6 +15,8 @@ import {
 } from "react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 
+const BASE_URL = "http://192.168.3.117:8000";
+
 interface Message {
   id: string;
   text: string;
@@ -34,32 +36,64 @@ export default function Advisor() {
   const [loading, setLoading] = useState(false);
   const flatRef = useRef<FlatList>(null);
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-    const userMsg = { id: Date.now().toString(), text: input.trim(), fromUser: true };
-    setMessages((m) => [...m, userMsg]);
-    setInput("");
-    setLoading(true);
+const sendMessage = async () => {
+  console.log("sendMessage invoked. input raw:", JSON.stringify(input));
+  const message = input.trim()
+  if (!message) {
+      console.log("sendMessage aborted: message is empty after trim");
+      return;
+      }
+  const userMsg: Message =
+   { id: Date.now().toString(),
+   text: message,
+   fromUser: true };
 
+  setMessages((m) => [...m, userMsg]);
+  setInput("");
+  setLoading(true);
+
+  try {
+    const response = await fetch('${BASE_URL}/ai/chat', {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+
+    const raw = await response.text();
+    console.log("Chatbot raw response:", raw);
+
+    let data: any;
     try {
-      const res = await fetch("https://your-api.com/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: userMsg.text }),
-      });
-      const { reply } = await res.json();
-      const botMsg = { id: (Date.now() + 1).toString(), text: reply, fromUser: false };
-      setMessages((m) => [...m, botMsg]);
+      data = JSON.parse(raw);
     } catch {
-      setMessages((m) => [
-        ...m,
-        { id: (Date.now() + 1).toString(), text: "Sorry, something went wrong.", fromUser: false },
-      ]);
-    } finally {
-      setLoading(false);
-      flatRef.current?.scrollToEnd({ animated: true });
+      throw new Error("Non-JSON response: " + raw);
     }
-  };
+
+    if (!response.ok) {
+      throw new Error(data.detail || data.reply || JSON.stringify(data));
+    }
+
+    const reply = data.reply;
+    const botMsg: Message = {
+    id: (Date.now() + 1).toString(),
+    text: reply,
+    fromUser: false };
+    setMessages((m) => [...m, botMsg]);
+  } catch (err: any) {
+    console.error("Chatbot fetch error:", err);
+    setMessages((m) => [
+      ...m,
+      {
+        id: (Date.now() + 1).toString(),
+        text: err.message || "Sorry, something went wrong.",
+        fromUser: false,
+      },
+    ]);
+  } finally {
+    setLoading(false);
+    flatRef.current?.scrollToEnd({ animated: true });
+  }
+};
 
   const renderBubble = ({ item }: { item: Message }) => (
     <View
@@ -123,10 +157,13 @@ export default function Advisor() {
             placeholderTextColor={subColor}
             value={input}
             onChangeText={setInput}
-            onSubmitEditing={sendMessage}
+            onSubmitEditing={() => sendMessage()}
             returnKeyType="send"
+            blurOnSubmit={false}
           />
-          <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
+          <TouchableOpacity style={styles.sendBtn}
+           onPress={() => sendMessage()}>
+             disabled={loading || !input.trim()}
             <Text style={styles.sendText}>Send</Text>
           </TouchableOpacity>
         </View>

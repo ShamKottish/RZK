@@ -1,4 +1,5 @@
 // app/profile.tsx
+import { useI18n } from "@/app/lib/i18n";
 import { useTheme } from "@/contexts/ThemeContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -17,6 +18,13 @@ import {
 export default function Profile() {
   const { darkMode } = useTheme();
   const router = useRouter();
+  const { t } = useI18n();
+
+  // helper to allow fallback when a translation key is missing
+  const translate = (key: string, fallback: string) => {
+    const val = t(key as any);
+    return val === key ? fallback : val;
+  };
 
   const [userName, setUserName] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
@@ -49,6 +57,7 @@ export default function Profile() {
   const text = darkMode ? "#f9fafb" : "#111827";
   const subtext = darkMode ? "#d1d5db" : "#6b7280";
   const border = darkMode ? "#374151" : "#e5e7eb";
+  const accent = "#8b5cf6";
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
@@ -57,41 +66,73 @@ export default function Profile() {
         {/* Header with Back & Edit Buttons */}
         <View style={[styles.header, { borderColor: border }]}>
           <View style={styles.headerLeft}>
-            <TouchableOpacity onPress={() => router.replace("/dashboard")} style={styles.backBtn}>
-              <Ionicons name="arrow-back-outline" size={24} color={"#8b5cf6"} />
+            <TouchableOpacity
+              onPress={() => router.replace("/dashboard")}
+              style={styles.backBtn}
+            >
+              <Ionicons name="arrow-back-outline" size={24} color={accent} />
             </TouchableOpacity>
-            <Ionicons name="person-circle-outline" size={48} color={"#8b5cf6"} />
-            <Text style={[styles.title,  { color: "#8b5cf6" }]}>Profile</Text>
+            <Ionicons
+              name="person-circle-outline"
+              size={48}
+              color={accent}
+            />
+            <Text style={[styles.title, { color: accent }]}>
+              {translate("profile", "Profile")}
+            </Text>
           </View>
-          <TouchableOpacity onPress={() => router.push("/editProfile")} style={styles.editIconBtn}>
-            <Ionicons name="pencil-outline" size={24} color={"#8b5cf6"} />
+          <TouchableOpacity
+            onPress={() => router.push("/editProfile")}
+            style={styles.editIconBtn}
+          >
+            <Ionicons name="pencil-outline" size={24} color={accent} />
           </TouchableOpacity>
         </View>
 
         {/* Profile Details */}
         <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
-          <Text style={[styles.label, { color: subtext }]}>Name</Text>
-          <Text style={[styles.value, { color: text }]}>{userName || "Your Name"}</Text>
+          <Text style={[styles.label, { color: subtext }]}>
+            {translate("name", "Name")}
+          </Text>
+          <Text style={[styles.value, { color: text }]}>
+            {userName || t("yourNamePlaceholder")}
+          </Text>
         </View>
 
         <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
-          <Text style={[styles.label, { color: subtext }]}>Email</Text>
-          <Text style={[styles.value, { color: text }]}>{userEmail || "you@example.com"}</Text>
+          <Text style={[styles.label, { color: subtext }]}>
+            {translate("email", "Email")}
+          </Text>
+          <Text style={[styles.value, { color: text }]}>
+            {userEmail || t("yourEmailPlaceholder")}
+          </Text>
         </View>
 
         <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
-          <Text style={[styles.label, { color: subtext }]}>Birthday</Text>
-          <Text style={[styles.value, { color: text }]}>{userBirthday || "Not set"}</Text>
+          <Text style={[styles.label, { color: subtext }]}>
+            {translate("birthday", "Birthday")}
+          </Text>
+          <Text style={[styles.value, { color: text }]}>
+            {userBirthday || translate("notSet", "Not set")}
+          </Text>
         </View>
 
         <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
-          <Text style={[styles.label, { color: subtext }]}>Phone Number</Text>
-          <Text style={[styles.value, { color: text }]}>{userPhone || "Not set"}</Text>
+          <Text style={[styles.label, { color: subtext }]}>
+            {translate("phoneNumber", "Phone Number")}
+          </Text>
+          <Text style={[styles.value, { color: text }]}>
+            {userPhone || translate("notSet", "Not set")}
+          </Text>
         </View>
 
         <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
-          <Text style={[styles.label, { color: subtext }]}>Country</Text>
-          <Text style={[styles.value, { color: text }]}>{userCountry || "Not set"}</Text>
+          <Text style={[styles.label, { color: subtext }]}>
+            {translate("country", "Country")}
+          </Text>
+          <Text style={[styles.value, { color: text }]}>
+            {userCountry || translate("notSet", "Not set")}
+          </Text>
         </View>
 
         {/* Bottom Edit Button */}
@@ -99,7 +140,9 @@ export default function Profile() {
           style={[styles.editBtn, { backgroundColor: cardBg, borderColor: border }]}
           onPress={() => router.push("/editProfile")}
         >
-          <Text style={[styles.editText, { color: "#8b5cf6" }]}>Edit Profile</Text>
+          <Text style={[styles.editText, { color: accent }]}>
+            {translate("editProfile", "Edit Profile")}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -132,7 +175,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     marginLeft: 12,
-   color: "#8b5cf6", 
+    // color is overridden inline
   },
   card: {
     borderRadius: 12,

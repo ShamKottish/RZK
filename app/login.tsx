@@ -1,3 +1,4 @@
+import { useI18n } from "@/app/lib/i18n";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as LocalAuthentication from "expo-local-authentication";
@@ -25,6 +26,9 @@ export default function LoginScreen() {
   const router = useRouter();
   const { darkMode } = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
+  const [phone_number, setPhoneNumber] = useState("");
+  const [birthday, setBirthday] = useState("");
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -62,32 +66,53 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!identifier || !password) {
+    console.log("handleLogin: missing fields", { identifier, passwordProvided: !!password });
       setError("Please fill in both fields.");
       return;
     }
 
   setLoading(true);
+  console.log("handleLogin: starting login", { identifier });
   try {
-    const response = await fetch("http://<192.168.100.223>:8000/user/login", {
+    const payload = { email: identifier, password };
+    console.log("handleLogin: sending request", payload);
+    const response = await fetch("http:// 192.168.3.117:8000/user/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: identifier, password }),
     });
+    console.log("handleLogin: received response", { status: response.status, ok: response.ok });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Login failed.");
+    console.log("handleLogin: parsed JSON response", data);
+    if (!response.ok) {
+      console.log("handleLogin: login failed, throwing error", { detail: data.detail });
+      throw new Error(data.detail || "Login failed.");
+    }
     await AsyncStorage.setItem("token", data.access_token);
+    console.log("handleLogin: token saved to AsyncStorage");
     router.replace("/dashboard");
+    console.log("handleLogin: navigated to /dashboard");
   } catch (err: any) {
+    console.log("handleLogin: caught error", err);
     setError(err.message);
   } finally {
     setLoading(false);
+    console.log("handleLogin: finished, loading set to false");
   }
 };
 
   const handleSignup = async () => {
+    console.log("handleSignup: starting signup", { email, phone_number, birthday });
     setLoading(true);
     try {
-      const response = await fetch("http://192.168.100.223:8000/user/login", {
+      const payload = {
+      email,
+      password,
+      phone_number: phone_number,
+      birthday: birthday,
+    };
+      console.log("handleSignup: sending request", payload);
+      const response = await fetch("http:// 192.168.3.117:8000/user/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -95,70 +120,111 @@ export default function LoginScreen() {
         body: JSON.stringify({
           email,
           password,
+          phone_number: phone_number,
+          birthday: birthday,
         }),
       });
 
-      const data = await response.json();
+    console.log("handleSignup: received response", { status: response.status, ok: response.ok });
+    const data = await response.json();
+    console.log("handleSignup: parsed JSON response", data);
 
       if (!response.ok) {
+        console.log("handleSignup: signup failed, throwing error", { detail: data.detail });
         throw new Error(data.detail || "Signup failed.");
       }
 
       await AsyncStorage.setItem("token", data.access_token);
+      console.log("handleSignup: token saved to AsyncStorage");
       router.replace("/dashboard");
+      console.log("handleSignup: navigated to /dashboard");
     } catch (err: any) {
+    console.log("handleSignup: caught error", err);
+
       setError(err.message);
     } finally {
       setLoading(false);
+      console.log("handleSignup: finished, loading set to false");
     }
   };
 
   const authenticateBiometric = async () => {
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Login with Face ID / Fingerprint",
-        fallbackLabel: "Enter password",
+        promptMessage: t("biometricPrompt"),
+        fallbackLabel: t("fallbackPassword"),
       });
       if (result.success) {
         await AsyncStorage.setItem("token", "demo-token-123");
         router.replace("/dashboard");
       } else {
-        Alert.alert("Authentication failed");
+        Alert.alert(t("authenticationFailed"));
       }
     } catch (e) {
       const err = e as Error;
-      Alert.alert("Biometric error", err.message);
+      Alert.alert(t("biometricError"), err.message);
     }
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg, paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0 }]}> 
-      <View style={[styles.supportButton, { top: insets.top || 16 }]}> 
-        <Pressable onPress={() => router.push("/support")}> 
+    <SafeAreaView
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor: bg,
+          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+        },
+      ]}
+    >
+      <View style={[styles.supportButton, { top: insets.top || 16 }]}>
+        <Pressable onPress={() => router.push("/support")}>
           <Ionicons name="headset-outline" size={24} color={text} />
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.container}
+      >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.card}>
-            <Text style={styles.title}>Welcome to RZK</Text>
+          <View style={[styles.card, { backgroundColor: "#6d28d9" }]}>
+            <Text style={styles.title}>{t("welcomeToRZK")}</Text>
 
             <View style={styles.tabContainer}>
-              <Pressable onPress={() => setActiveTab("login")} style={[styles.tab, activeTab === "login" && styles.activeTab]}>
-                <Text style={[styles.tabText, activeTab === "login" && styles.activeTabText]}>Login</Text>
+              <Pressable
+                onPress={() => setActiveTab("login")}
+                style={[styles.tab, activeTab === "login" && styles.activeTab]}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "login" && styles.activeTabText,
+                  ]}
+                >
+                  {t("signIn")}
+                </Text>
               </Pressable>
-              <Pressable onPress={() => setActiveTab("signup")} style={[styles.tab, activeTab === "signup" && styles.activeTab]}>
-                <Text style={[styles.tabText, activeTab === "signup" && styles.activeTabText]}>Sign Up</Text>
+              <Pressable
+                onPress={() => setActiveTab("signup")}
+                style={[styles.tab, activeTab === "signup" && styles.activeTab]}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "signup" && styles.activeTabText,
+                  ]}
+                >
+                  {t("createAccount")}
+                </Text>
               </Pressable>
             </View>
 
             {activeTab === "signup" && (
               <>
-                <Text style={styles.label}>Username</Text>
+                <Text style={styles.label}>{t("username")}</Text>
                 <TextInput
                   style={[styles.input, { color: text }]}
-                  placeholder="Enter your username"
+                  placeholder={t("enterYourUsername")}
                   placeholderTextColor={placeholder}
                   value={username}
                   onChangeText={setUsername}
@@ -166,12 +232,21 @@ export default function LoginScreen() {
               </>
             )}
 
-            <Text style={styles.label}>Email or Phone</Text>
-            <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder }]}> 
-              <Ionicons name={/^[0-9]+$/.test(identifier) ? "call-outline" : "mail-outline"} size={20} color={placeholder} />
+            <Text style={styles.label}>{t("emailOrPhone")}</Text>
+            <View
+              style={[
+                styles.inputGroup,
+                { backgroundColor: cardBg, borderColor: placeholder },
+              ]}
+            >
+              <Ionicons
+                name={/^[0-9]+$/.test(identifier) ? "call-outline" : "mail-outline"}
+                size={20}
+                color={placeholder}
+              />
               <TextInput
                 style={[styles.input, { color: text }]}
-                placeholder="Email or Phone"
+                placeholder={t("emailOrPhone")}
                 placeholderTextColor={placeholder}
                 keyboardType="default"
                 autoCapitalize="none"
@@ -180,12 +255,17 @@ export default function LoginScreen() {
               />
             </View>
 
-            <Text style={styles.label}>Password</Text>
-            <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder }]}>
+            <Text style={styles.label}>{t("passwordPlaceholder")}</Text>
+            <View
+              style={[
+                styles.inputGroup,
+                { backgroundColor: cardBg, borderColor: placeholder },
+              ]}
+            >
               <Ionicons name="lock-closed-outline" size={20} color={placeholder} />
               <TextInput
                 style={[styles.input, { color: text, flex: 1 }]}
-                placeholder="Password"
+                placeholder={t("passwordPlaceholder")}
                 placeholderTextColor={placeholder}
                 secureTextEntry={!showPwd}
                 value={password}
@@ -198,39 +278,73 @@ export default function LoginScreen() {
 
             {activeTab === "login" && (
               <>
-                <Pressable onPress={() => setRememberMe(!rememberMe)} style={{ flexDirection: "row", alignItems: "center", marginBottom: 16, alignSelf: "flex-start" }}>
-                  <View style={{ height: 20, width: 20, borderRadius: 4, borderWidth: 1, borderColor: placeholder, backgroundColor: rememberMe ? "#8b5cf6" : "transparent", justifyContent: "center", alignItems: "center", marginRight: 8 }}>
-                    {rememberMe && <Ionicons name="checkmark" size={14} color="#fff" />}
+                <Pressable
+                  onPress={() => setRememberMe(!rememberMe)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: 16,
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  <View
+                    style={{
+                      height: 20,
+                      width: 20,
+                      borderRadius: 4,
+                      borderWidth: 1,
+                      borderColor: placeholder,
+                      backgroundColor: rememberMe ? "#8b5cf6" : "transparent",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginRight: 8,
+                    }}
+                  >
+                    {rememberMe && (
+                      <Ionicons name="checkmark" size={14} color="#fff" />
+                    )}
                   </View>
-                  <Text style={{ color: text, fontSize: 14 }}>Remember Me</Text>
+                  <Text style={{ color: text, fontSize: 14 }}>
+                    {t("rememberMe")}
+                  </Text>
                 </Pressable>
                 <Pressable onPress={() => router.push("/forgot-password")}>
-                  <Text style={[styles.forgotText, { color: text }]}>Forgot Password?</Text>
+                  <Text style={[styles.forgotText, { color: text }]}>
+                    {t("forgotPassword")}
+                  </Text>
                 </Pressable>
               </>
             )}
 
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
             <Pressable
               onPress={activeTab === "signup" ? handleSignup : handleLogin}
-              disabled={loading || (activeTab === "login" && (!identifier || !password))}
+              disabled={
+                loading || (activeTab === "login" && (!identifier || !password))
+              }
               style={[styles.button, loading && { opacity: 0.6 }]}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.buttonText}>
-                  {activeTab === "signup" ? "Create Account" : "Sign In"}
+                  {activeTab === "signup" ? t("createAccount") : t("signIn")}
                 </Text>
               )}
             </Pressable>
 
             {biometricAvailable && activeTab === "login" && (
-              <Pressable style={styles.button} onPress={authenticateBiometric}>
-                <Text style={styles.buttonText}>Activate Quick Log In</Text>
+              <Pressable style={[styles.button, { marginTop: 8 }]} onPress={authenticateBiometric}>
+                <Text style={styles.buttonText}>
+                  {t("activateQuickLogIn")}
+                </Text>
               </Pressable>
             )}
 
-            <Text style={[styles.demoHint, { color: placeholder }]}>Demo: demo@rzk.com or 0551234567 / password123</Text>
+            <Text style={[styles.demoHint, { color: placeholder }]}>
+              {t("demoHint")}
+            </Text>
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>

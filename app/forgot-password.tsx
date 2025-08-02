@@ -1,4 +1,5 @@
 // app/forgot-password.tsx
+import { useI18n } from '@/app/lib/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -21,33 +22,48 @@ import { useTheme } from '../contexts/ThemeContext';
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { darkMode } = useTheme();
+  const { t } = useI18n();
   const [identifier, setIdentifier] = useState(''); // email or phone
   const [loading, setLoading] = useState(false);
+
+  // fallback helper for simple keys
+  const tr = (key: string, fallback: string) => {
+    const val = t(key as any);
+    return val === key ? fallback : val;
+  };
 
   const bg = darkMode ? '#111827' : '#f5f5f5';
   const text = darkMode ? '#f9fafb' : '#111827';
   const cardBg = darkMode ? '#1f2937' : '#ffffff';
   const placeholder = darkMode ? '#d1d5db' : '#6b7280';
+  const accent = '#8b5cf6';
 
   const handleReset = () => {
     if (!identifier) {
-      Alert.alert('Error', 'Please enter your email or phone number.');
+      Alert.alert(
+        tr('errorTitle', 'Error'),
+        tr('enterEmailOrPhone', 'Please enter your email or phone number.')
+      );
       return;
     }
     setLoading(true);
     // simulate API call
     setTimeout(() => {
       setLoading(false);
+      const msgFromT = t('resetSentMessage' as any, { identifier });
+      const message =
+        msgFromT === 'resetSentMessage'
+          ? `If an account exists for "${identifier}", you’ll receive reset instructions shortly.`
+          : msgFromT;
       Alert.alert(
-        'Reset Sent',
-        `If an account exists for "${identifier}", you’ll receive reset instructions shortly.`,
-        [
-          { text: 'OK', onPress: () => router.back() }
-        ]
+        tr('resetSentTitle', 'Reset Sent'),
+        message,
+        [{ text: tr('ok', 'OK'), onPress: () => router.back() }]
       );
     }, 1500);
   };
 
+  const isNumeric = identifier.match(/^[0-9]*$/);
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
       <KeyboardAvoidingView
@@ -57,23 +73,31 @@ export default function ForgotPasswordScreen() {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.container}>
             <Text style={[styles.header, { color: text }]}>
-              Reset Password
+              {tr('resetPasswordTitle', 'Reset Password')}
             </Text>
             <Text style={[styles.subheader, { color: placeholder }]}>
-              Enter your email address or phone number to receive reset instructions.
+              {tr(
+                'resetInstructionsSubtitle',
+                'Enter your email address or phone number to receive reset instructions.'
+              )}
             </Text>
 
-            <View style={[styles.inputGroup, { backgroundColor: cardBg, borderColor: placeholder }]}>
+            <View
+              style={[
+                styles.inputGroup,
+                { backgroundColor: cardBg, borderColor: placeholder },
+              ]}
+            >
               <Ionicons
-                name={identifier.match(/^[0-9]*$/) ? 'call-outline' : 'mail-outline'}
+                name={isNumeric ? 'call-outline' : 'mail-outline'}
                 size={20}
                 color={placeholder}
               />
               <TextInput
                 style={[styles.input, { color: text }]}
-                placeholder="Email or Phone"
+                placeholder={tr('emailOrPhonePlaceholder', 'Email or Phone')}
                 placeholderTextColor={placeholder}
-                keyboardType={identifier.match(/^[0-9]*$/) ? 'phone-pad' : 'email-address'}
+                keyboardType={isNumeric ? 'phone-pad' : 'email-address'}
                 autoCapitalize="none"
                 value={identifier}
                 onChangeText={setIdentifier}
@@ -81,19 +105,26 @@ export default function ForgotPasswordScreen() {
             </View>
 
             <Pressable
-              style={[styles.button, { backgroundColor: '#8b5cf6' }, loading && styles.buttonDisabled]}
+              style={[
+                styles.button,
+                { backgroundColor: accent },
+                loading && styles.buttonDisabled,
+              ]}
               onPress={handleReset}
               disabled={loading}
             >
-              {loading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.buttonText}>Send Reset Link</Text>
-              }
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>
+                  {tr('sendResetLink', 'Send Reset Link')}
+                </Text>
+              )}
             </Pressable>
 
             <Pressable onPress={() => router.back()}>
-              <Text style={[styles.backText, { color: '#8b5cf6' }]}>
-                ← Back 
+              <Text style={[styles.backText, { color: accent }]}>
+                {tr('back', '← Back')}
               </Text>
             </Pressable>
           </View>

@@ -1,15 +1,15 @@
 // app/_layout.tsx
-import { Slot } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { ThemeProvider } from '../contexts/ThemeContext';
+import { I18nProvider } from "@/app/lib/i18n";
+import { Slot } from "expo-router";
+import React from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      {/* StatusBar auto‑switches based on theme */}
-      <StatusBar style="auto" />
-      <Slot />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <I18nProvider>
+        <Slot />
+      </I18nProvider>
+    </SafeAreaProvider>
   );
 }
